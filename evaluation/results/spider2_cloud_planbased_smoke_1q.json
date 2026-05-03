@@ -1,0 +1,182 @@
+{
+  "experiment": "spider2_subset_fair_prompt",
+  "status": "completed",
+  "dataset_json": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\spider2_local_subset.json",
+  "db_root": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\local_sqlite_dbs",
+  "subset": {
+    "selected_db_ids": [
+      "IPL"
+    ],
+    "selected_count": 1,
+    "requested_num_dbs": 1,
+    "requested_num_queries": 1
+  },
+  "runtime_config": {
+    "llm_timeout_seconds": 180,
+    "max_correction_retries": 1,
+    "max_semantic_retries": 0,
+    "use_semantic_loop": true,
+    "system_plan_based": true,
+    "api_max_retries": 1,
+    "api_recovery_rounds": 2,
+    "api_recovery_cooldown_seconds": 5,
+    "throttle_seconds": 0.0
+  },
+  "results": [
+    {
+      "db_id": "IPL",
+      "example_id": "local022",
+      "question": "Retrieve the names of players who scored no less than 100 runs in a match while playing for the team that lost that match.",
+      "gold_sql": "-- Step 1: Calculate players' total runs in each match\nWITH player_runs AS (\n    SELECT \n        bbb.striker AS player_id, \n        bbb.match_id, \n        SUM(bsc.runs_scored) AS total_runs \n    FROM \n        ball_by_ball AS bbb\n    JOIN \n        batsman_scored AS bsc\n    ON \n        bbb.match_id = bsc.match_id \n        AND bbb.over_id = bsc.over_id \n        AND bbb.ball_id = bsc.ball_id \n        AND bbb.innings_no = bsc.innings_no\n    GROUP BY \n        bbb.striker, bbb.match_id\n    HAVING \n        SUM(bsc.runs_scored) >= 100\n),\n\n-- Step 2: Identify losing teams for each match\nlosing_teams AS (\n    SELECT \n        match_id, \n        CASE \n            WHEN match_winner = team_1 THEN team_2 \n            ELSE team_1 \n        END AS loser \n    FROM \n        match\n),\n\n-- Step 3: Combine the above results to get players who scored 100 or more runs in losing teams\nplayers_in_losing_teams AS (\n    SELECT \n        pr.player_id, \n        pr.match_id \n    FROM \n        player_runs AS pr\n    JOIN \n        losing_teams AS lt\n    ON \n        pr.match_id = lt.match_id\n    JOIN \n        player_match AS pm\n    ON \n        pr.player_id = pm.player_id \n        AND pr.match_id = pm.match_id \n        AND lt.loser = pm.team_id\n)\n\n-- Step 4: Select distinct player names from the player table\nSELECT DISTINCT \n    p.player_name \nFROM \n    player AS p\nJOIN \n    players_in_losing_teams AS plt\nON \n    p.player_id = plt.player_id\nORDER BY \n    p.player_name;",
+      "baseline_sql": "SELECT\n  p.player_name\nFROM player p\nJOIN batsman_scored bs\n  ON p.player_id = bs.striker\nJOIN ball_by_ball bbb\n  ON bs.match_id = bbb.match_id\n  AND bs.over_id = bbb.over_id\n  AND bs.ball_id = bbb.ball_id\n  AND bs.innings_no = bbb.innings_no\nJOIN match m\n  ON bs.match_id = m.match_id\nJOIN player_match pm\n  ON m.match_id = pm.match_id\n  AND p.player_id = pm.player_id\nWHERE\n  pm.team_id != m.match_winner\nGROUP BY\n  p.player_id,\n  p.player_name,\n  bs.match_id\nHAVING\n  SUM(bs.runs_scored) >= 100;",
+      "system_sql": "SELECT\n  player.player_name\nFROM player\nJOIN ball_by_ball\n  ON player.player_id = ball_by_ball.striker\nJOIN batsman_scored\n  ON ball_by_ball.match_id = batsman_scored.match_id\n  AND ball_by_ball.over_id = batsman_scored.over_id\n  AND ball_by_ball.ball_id = batsman_scored.ball_id\n  AND ball_by_ball.innings_no = batsman_scored.innings_no\nJOIN match\n  ON ball_by_ball.match_id = match.match_id\nJOIN player_match\n  ON ball_by_ball.match_id = player_match.match_id\n  AND ball_by_ball.striker = player_match.player_id\nWHERE\n  player_match.team_id != match.match_winner\nGROUP BY\n  player.player_id,\n  player.player_name,\n  ball_by_ball.match_id\nHAVING\n  SUM(batsman_scored.runs_scored) >= 100;",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": false,
+      "system_execution_success": true,
+      "baseline_classification": "incorrect_sql",
+      "system_classification": "wrong_results",
+      "baseline_failure_type": "incorrect_sql",
+      "system_failure_type": "wrong_results",
+      "baseline_api_failures": 0,
+      "system_api_failures": 0,
+      "baseline_retries_used": 0,
+      "system_retries_used": 0,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "VALID",
+      "system_semantic_validation_reason": "",
+      "system_semantic_trace": [
+        {
+          "step": "initial_validation",
+          "decision": "VALID",
+          "reason": "",
+          "sql_before": "SELECT\n  player.player_name\nFROM player\nJOIN ball_by_ball\n  ON player.player_id = ball_by_ball.striker\nJOIN batsman_scored\n  ON ball_by_ball.match_id = batsman_scored.match_id\n  AND ball_by_ball.over_id = batsman_scored.over_id\n  AND ball_by_ball.ball_id = batsman_scored.ball_id\n  AND ball_by_ball.innings_no = batsman_scored.innings_no\nJOIN match\n  ON ball_by_ball.match_id = match.match_id\nJOIN player_match\n  ON ball_by_ball.match_id = player_match.match_id\n  AND ball_by_ball.striker = player_match.player_id\nWHERE\n  player_match.team_id != match.match_winner\nGROUP BY\n  player.player_id,\n  player.player_name,\n  ball_by_ball.match_id\nHAVING\n  SUM(batsman_scored.runs_scored) >= 100;",
+          "sql_after": "SELECT\n  player.player_name\nFROM player\nJOIN ball_by_ball\n  ON player.player_id = ball_by_ball.striker\nJOIN batsman_scored\n  ON ball_by_ball.match_id = batsman_scored.match_id\n  AND ball_by_ball.over_id = batsman_scored.over_id\n  AND ball_by_ball.ball_id = batsman_scored.ball_id\n  AND ball_by_ball.innings_no = batsman_scored.innings_no\nJOIN match\n  ON ball_by_ball.match_id = match.match_id\nJOIN player_match\n  ON ball_by_ball.match_id = player_match.match_id\n  AND ball_by_ball.striker = player_match.player_id\nWHERE\n  player_match.team_id != match.match_winner\nGROUP BY\n  player.player_id,\n  player.player_name,\n  ball_by_ball.match_id\nHAVING\n  SUM(batsman_scored.runs_scored) >= 100;",
+          "result_row_count": 0,
+          "validator_api_error": null
+        }
+      ],
+      "system_plan": {
+        "intent": "Retrieve names of players who scored 100 or more runs in a single match while playing for the team that lost that specific match.",
+        "tables": [
+          "player",
+          "batsman_scored",
+          "ball_by_ball",
+          "match",
+          "player_match"
+        ],
+        "joins": [
+          {
+            "left": "player",
+            "right": "ball_by_ball",
+            "on": "player.player_id = ball_by_ball.striker"
+          },
+          {
+            "left": "ball_by_ball",
+            "right": "batsman_scored",
+            "on": "ball_by_ball.match_id = batsman_scored.match_id AND ball_by_ball.over_id = batsman_scored.over_id AND ball_by_ball.ball_id = batsman_scored.ball_id AND ball_by_ball.innings_no = batsman_scored.innings_no"
+          },
+          {
+            "left": "ball_by_ball",
+            "right": "match",
+            "on": "ball_by_ball.match_id = match.match_id"
+          },
+          {
+            "left": "ball_by_ball",
+            "right": "player_match",
+            "on": "ball_by_ball.match_id = player_match.match_id AND ball_by_ball.striker = player_match.player_id"
+          }
+        ],
+        "filters": [
+          "player_match.team_id != match.match_winner"
+        ],
+        "aggregations": [
+          "SUM(batsman_scored.runs_scored) AS total_runs"
+        ],
+        "group_by": [
+          "player.player_id",
+          "player.player_name",
+          "ball_by_ball.match_id"
+        ],
+        "order_by": [],
+        "limit": "",
+        "subqueries": [
+          "A subquery or HAVING clause to filter groups where total_runs >= 100"
+        ],
+        "reasoning_steps": [
+          "Step 1: Join 'player' with 'ball_by_ball' to identify which player was the striker for each ball.",
+          "Step 2: Join 'ball_by_ball' with 'batsman_scored' using the composite key (match_id, over_id, ball_id, innings_no) to get the runs scored on each ball.",
+          "Step 3: Join with the 'match' table to identify the winner of each match.",
+          "Step 4: Join with 'player_match' to determine which team the player was representing in that specific match.",
+          "Step 5: Apply a filter to ensure the player's team (player_match.team_id) is NOT the match winner (match.match_winner).",
+          "Step 6: Group the results by player and match_id to calculate the total runs scored by each player in each match.",
+          "Step 7: Use a HAVING clause to filter for players who scored 100 or more runs in that match.",
+          "Step 8: Select the player_name from the resulting set."
+        ]
+      },
+      "system_plan_raw": "```json\n{\n\"intent\": \"Retrieve names of players who scored 100 or more runs in a single match while playing for the team that lost that specific match.\",\n\"tables\": [\"player\", \"batsman_scored\", \"ball_by_ball\", \"match\", \"player_match\"],\n\"joins\": [\n{\"left\": \"player\", \"right\": \"ball_by_ball\", \"on\": \"player.player_id = ball_by_ball.striker\"},\n{\"left\": \"ball_by_ball\", \"right\": \"batsman_scored\", \"on\": \"ball_by_ball.match_id = batsman_scored.match_id AND ball_by_ball.over_id = batsman_scored.over_id AND ball_by_ball.ball_id = batsman_scored.ball_id AND ball_by_ball.innings_no = batsman_scored.innings_no\"},\n{\"left\": \"ball_by_ball\", \"right\": \"match\", \"on\": \"ball_by_ball.match_id = match.match_id\"},\n{\"left\": \"ball_by_ball\", \"right\": \"player_match\", \"on\": \"ball_by_ball.match_id = player_match.match_id AND ball_by_ball.striker = player_match.player_id\"}\n],\n\"filters\": [\"player_match.team_id != match.match_winner\"],\n\"aggregations\": [\"SUM(batsman_scored.runs_scored) AS total_runs\"],\n\"group_by\": [\"player.player_id\", \"player.player_name\", \"ball_by_ball.match_id\"],\n\"order_by\": [],\n\"limit\": null,\n\"subqueries\": [\"A subquery or HAVING clause to filter groups where total_runs >= 100\"],\n\"reasoning_steps\": [\n\"Step 1: Join 'player' with 'ball_by_ball' to identify which player was the striker for each ball.\",\n\"Step 2: Join 'ball_by_ball' with 'batsman_scored' using the composite key (match_id, over_id, ball_id, innings_no) to get the runs scored on each ball.\",\n\"Step 3: Join with the 'match' table to identify the winner of each match.\",\n\"Step 4: Join with 'player_match' to determine which team the player was representing in that specific match.\",\n\"Step 5: Apply a filter to ensure the player's team (player_match.team_id) is NOT the match winner (match.match_winner).\",\n\"Step 6: Group the results by player and match_id to calculate the total runs scored by each player in each match.\",\n\"Step 7: Use a HAVING clause to filter for players who scored 100 or more runs in that match.\",\n\"Step 8: Select the player_name from the resulting set.\"\n]\n}\n```",
+      "system_plan_parse_error": "",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 1.0,
+      "system_plan_quality_reasons": [],
+      "system_planner_api_failures": 0,
+      "system_planner_retries_used": 0,
+      "system_planner_retry_success": false,
+      "baseline_runtime_sec": 7.953,
+      "system_runtime_sec": 56.835,
+      "query_runtime_sec": 64.803,
+      "attempts_used": 1,
+      "winner": "system",
+      "baseline_error": "no such column: bs.striker",
+      "system_error": null,
+      "is_complex": true,
+      "complexity_score": 13,
+      "complexity_reasons": [
+        "joins:3",
+        "nested-select",
+        "group-by",
+        "having",
+        "aggregation"
+      ],
+      "notes": "System recovered baseline failure: no such column: bs.striker"
+    }
+  ],
+  "metrics": {
+    "total_queries": 1,
+    "complex_queries": 1,
+    "total_runtime_sec": 64.803,
+    "avg_query_runtime_sec": 64.803,
+    "baseline_accuracy": 0.0,
+    "system_accuracy": 0.0,
+    "improvement": 0.0,
+    "improvement_percent": 0.0,
+    "baseline_execution_success_rate": 0.0,
+    "system_execution_success_rate": 1.0,
+    "baseline_incorrect_sql": 1,
+    "system_incorrect_sql": 0,
+    "baseline_wrong_results": 0,
+    "system_wrong_results": 1,
+    "baseline_complex_query_accuracy": 0.0,
+    "system_complex_query_accuracy": 0.0,
+    "complex_query_accuracy": {
+      "baseline": 0.0,
+      "system": 0.0
+    },
+    "baseline_api_failures": 0,
+    "system_api_failures": 0,
+    "api_failures": 0,
+    "retry_success_rate": 0.0,
+    "semantic_corrections_used": 0,
+    "semantic_success_rate": 0.0,
+    "plan_quality": {
+      "avg_score": 1.0,
+      "high_rate": 1.0,
+      "count": 1
+    },
+    "plan_quality_avg": 1.0,
+    "logical_error_reduction": 0.0
+  }
+}

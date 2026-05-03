@@ -1,0 +1,138 @@
+{
+  "experiment": "spider2_subset_fair_prompt",
+  "status": "completed",
+  "dataset_json": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\spider2_local_subset.json",
+  "db_root": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\local_sqlite_dbs",
+  "subset": {
+    "selected_db_ids": [
+      "IPL"
+    ],
+    "selected_count": 1,
+    "requested_num_dbs": 1,
+    "requested_num_queries": 1
+  },
+  "runtime_config": {
+    "llm_timeout_seconds": 180,
+    "max_correction_retries": 1,
+    "max_semantic_retries": 0,
+    "max_plan_validation_attempts": 3,
+    "use_semantic_loop": true,
+    "system_plan_based": true,
+    "api_max_retries": 1,
+    "api_recovery_rounds": 2,
+    "api_recovery_cooldown_seconds": 20,
+    "throttle_seconds": 0.0
+  },
+  "results": [
+    {
+      "db_id": "IPL",
+      "example_id": "local022",
+      "question": "Retrieve the names of players who scored no less than 100 runs in a match while playing for the team that lost that match.",
+      "gold_sql": "-- Step 1: Calculate players' total runs in each match\nWITH player_runs AS (\n    SELECT \n        bbb.striker AS player_id, \n        bbb.match_id, \n        SUM(bsc.runs_scored) AS total_runs \n    FROM \n        ball_by_ball AS bbb\n    JOIN \n        batsman_scored AS bsc\n    ON \n        bbb.match_id = bsc.match_id \n        AND bbb.over_id = bsc.over_id \n        AND bbb.ball_id = bsc.ball_id \n        AND bbb.innings_no = bsc.innings_no\n    GROUP BY \n        bbb.striker, bbb.match_id\n    HAVING \n        SUM(bsc.runs_scored) >= 100\n),\n\n-- Step 2: Identify losing teams for each match\nlosing_teams AS (\n    SELECT \n        match_id, \n        CASE \n            WHEN match_winner = team_1 THEN team_2 \n            ELSE team_1 \n        END AS loser \n    FROM \n        match\n),\n\n-- Step 3: Combine the above results to get players who scored 100 or more runs in losing teams\nplayers_in_losing_teams AS (\n    SELECT \n        pr.player_id, \n        pr.match_id \n    FROM \n        player_runs AS pr\n    JOIN \n        losing_teams AS lt\n    ON \n        pr.match_id = lt.match_id\n    JOIN \n        player_match AS pm\n    ON \n        pr.player_id = pm.player_id \n        AND pr.match_id = pm.match_id \n        AND lt.loser = pm.team_id\n)\n\n-- Step 4: Select distinct player names from the player table\nSELECT DISTINCT \n    p.player_name \nFROM \n    player AS p\nJOIN \n    players_in_losing_teams AS plt\nON \n    p.player_id = plt.player_id\nORDER BY \n    p.player_name;",
+      "baseline_sql": "",
+      "system_sql": "",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": false,
+      "system_execution_success": false,
+      "baseline_classification": "api_error",
+      "system_classification": "api_error",
+      "baseline_failure_type": "api_error",
+      "system_failure_type": "api_error",
+      "baseline_api_failures": 1,
+      "system_api_failures": 1,
+      "baseline_retries_used": 2,
+      "system_retries_used": 4,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "NOT_RUN",
+      "system_semantic_validation_reason": "api_error",
+      "system_semantic_trace": [],
+      "system_plan": {
+        "intent": "Retrieve the names of players who scored no less than 100 runs in a match while playing for the team that lost that match.",
+        "tables": [],
+        "joins": [],
+        "filters": [],
+        "aggregations": [],
+        "group_by": [],
+        "order_by": [],
+        "limit": "",
+        "subqueries": [],
+        "reasoning_steps": [
+          "Planner failed due to API error. Fallback intent-only plan was used."
+        ]
+      },
+      "system_plan_raw": "",
+      "system_plan_parse_error": "planner_api_error: api_error: Groq request failed. Check network, API key, and model name.",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 0.9,
+      "system_plan_quality_reasons": [
+        "tables"
+      ],
+      "system_planner_api_failures": 1,
+      "system_planner_retries_used": 2,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 0,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [],
+      "system_plan_validation_attempts_used": 0,
+      "baseline_runtime_sec": 38.187,
+      "system_runtime_sec": 114.49,
+      "query_runtime_sec": 152.679,
+      "attempts_used": 2,
+      "winner": "tie",
+      "baseline_error": "api_error: Groq request failed. Check network, API key, and model name.",
+      "system_error": "api_error: Groq request failed. Check network, API key, and model name.",
+      "is_complex": true,
+      "complexity_score": 13,
+      "complexity_reasons": [
+        "joins:3",
+        "nested-select",
+        "group-by",
+        "having",
+        "aggregation"
+      ],
+      "notes": "Both failed (baseline: api_error: Groq request failed. Check network, API key, and model name.; system: api_error: Groq request failed. Check network, API key, and model name.)"
+    }
+  ],
+  "metrics": {
+    "total_queries": 1,
+    "complex_queries": 1,
+    "total_runtime_sec": 152.679,
+    "avg_query_runtime_sec": 152.679,
+    "baseline_accuracy": 0.0,
+    "system_accuracy": 0.0,
+    "final_accuracy": 0.0,
+    "improvement": 0.0,
+    "improvement_percent": 0.0,
+    "baseline_execution_success_rate": 0.0,
+    "system_execution_success_rate": 0.0,
+    "baseline_incorrect_sql": 0,
+    "system_incorrect_sql": 0,
+    "baseline_wrong_results": 0,
+    "system_wrong_results": 0,
+    "baseline_complex_query_accuracy": 0.0,
+    "system_complex_query_accuracy": 0.0,
+    "complex_query_accuracy": {
+      "baseline": 0.0,
+      "system": 0.0
+    },
+    "baseline_api_failures": 1,
+    "system_api_failures": 1,
+    "api_failures": 2,
+    "retry_success_rate": 0.0,
+    "semantic_corrections_used": 0,
+    "semantic_success_rate": 0.0,
+    "plan_quality": {
+      "avg_score": 0.9,
+      "high_rate": 1.0,
+      "count": 1
+    },
+    "plan_quality_avg": 0.9,
+    "plan_validation_failures": 0,
+    "plan_correction_success_rate": 0.0,
+    "logical_error_reduction": 0.0
+  }
+}

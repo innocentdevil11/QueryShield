@@ -1,0 +1,24 @@
+{
+  "hard_queries": [
+    "Show best student",
+    "Top performer",
+    "High scoring students",
+    "List student emails with course names and marks above average",
+    "Students who performed better than average in each course",
+    "Find students who scored above average in at least 2 courses",
+    "Top department based on average marks",
+    "student_name list",
+    "course score data",
+    "List students whose average marks are above the overall average",
+    "Show course-wise toppers with student names",
+    "Count students scoring above 90 in each course",
+    "Students who never enrolled in any course",
+    "Courses where average marks are above overall average",
+    "Show top 3 students per course",
+    "Find students with highest marks in each department",
+    "List students whose marks improved over time",
+    "Show departments with more than 5 students scoring above 80",
+    "Courses taken by all Computer Science students",
+    "Students who scored in every course"
+  ]
+}

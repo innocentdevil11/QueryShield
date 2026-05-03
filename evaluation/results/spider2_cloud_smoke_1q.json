@@ -1,0 +1,99 @@
+{
+  "experiment": "spider2_subset_fair_prompt",
+  "status": "completed",
+  "dataset_json": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\spider2_local_subset.json",
+  "db_root": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\local_sqlite_dbs",
+  "subset": {
+    "selected_db_ids": [
+      "IPL"
+    ],
+    "selected_count": 1,
+    "requested_num_dbs": 1,
+    "requested_num_queries": 1
+  },
+  "runtime_config": {
+    "llm_timeout_seconds": 180,
+    "max_correction_retries": 1,
+    "max_semantic_retries": 2,
+    "use_semantic_loop": false,
+    "api_max_retries": 0,
+    "api_recovery_rounds": 1,
+    "api_recovery_cooldown_seconds": 0,
+    "throttle_seconds": 0.0
+  },
+  "results": [
+    {
+      "db_id": "IPL",
+      "example_id": "local022",
+      "question": "Retrieve the names of players who scored no less than 100 runs in a match while playing for the team that lost that match.",
+      "gold_sql": "-- Step 1: Calculate players' total runs in each match\nWITH player_runs AS (\n    SELECT \n        bbb.striker AS player_id, \n        bbb.match_id, \n        SUM(bsc.runs_scored) AS total_runs \n    FROM \n        ball_by_ball AS bbb\n    JOIN \n        batsman_scored AS bsc\n    ON \n        bbb.match_id = bsc.match_id \n        AND bbb.over_id = bsc.over_id \n        AND bbb.ball_id = bsc.ball_id \n        AND bbb.innings_no = bsc.innings_no\n    GROUP BY \n        bbb.striker, bbb.match_id\n    HAVING \n        SUM(bsc.runs_scored) >= 100\n),\n\n-- Step 2: Identify losing teams for each match\nlosing_teams AS (\n    SELECT \n        match_id, \n        CASE \n            WHEN match_winner = team_1 THEN team_2 \n            ELSE team_1 \n        END AS loser \n    FROM \n        match\n),\n\n-- Step 3: Combine the above results to get players who scored 100 or more runs in losing teams\nplayers_in_losing_teams AS (\n    SELECT \n        pr.player_id, \n        pr.match_id \n    FROM \n        player_runs AS pr\n    JOIN \n        losing_teams AS lt\n    ON \n        pr.match_id = lt.match_id\n    JOIN \n        player_match AS pm\n    ON \n        pr.player_id = pm.player_id \n        AND pr.match_id = pm.match_id \n        AND lt.loser = pm.team_id\n)\n\n-- Step 4: Select distinct player names from the player table\nSELECT DISTINCT \n    p.player_name \nFROM \n    player AS p\nJOIN \n    players_in_losing_teams AS plt\nON \n    p.player_id = plt.player_id\nORDER BY \n    p.player_name;",
+      "baseline_sql": "SELECT\n  p.player_name\nFROM player p\nJOIN batsman_scored bs\n  ON p.player_id = bs.striker\nJOIN ball_by_ball bbb\n  ON bs.match_id = bbb.match_id\n  AND bs.over_id = bbb.over_id\n  AND bs.ball_id = bbb.ball_id\n  AND bs.innings_no = bbb.innings_no\nJOIN match m\n  ON bs.match_id = m.match_id\nWHERE\n  bbb.team_batting != m.match_winner\nGROUP BY\n  p.player_id,\n  p.player_name,\n  bs.match_id\nHAVING\n  SUM(bs.runs_scored) >= 100;",
+      "system_sql": "SELECT\n  p.player_name\nFROM player p\nJOIN batsman_scored bs ON p.player_id = bs.player_id\nJOIN match m ON bs.match_id = m.match_id\nJOIN player_match pm ON p.player_id = pm.player_id \n  AND m.match_id = pm.match_id\nWHERE pm.team_id != m.match_winner\nGROUP BY\n  p.player_id,\n  p.player_name,\n  bs.match_id\nHAVING\n  SUM(bs.runs_scored) >= 100;",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": false,
+      "system_execution_success": false,
+      "baseline_classification": "incorrect_sql",
+      "system_classification": "incorrect_sql",
+      "baseline_failure_type": "incorrect_sql",
+      "system_failure_type": "incorrect_sql",
+      "baseline_api_failures": 0,
+      "system_api_failures": 0,
+      "baseline_retries_used": 0,
+      "system_retries_used": 0,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "NOT_RUN",
+      "system_semantic_validation_reason": "execution_failed",
+      "system_semantic_trace": [],
+      "baseline_runtime_sec": 9.012,
+      "system_runtime_sec": 17.653,
+      "query_runtime_sec": 26.683,
+      "attempts_used": 2,
+      "winner": "tie",
+      "baseline_error": "no such column: bs.striker",
+      "system_error": "no such column: bs.player_id",
+      "is_complex": true,
+      "complexity_score": 13,
+      "complexity_reasons": [
+        "joins:3",
+        "nested-select",
+        "group-by",
+        "having",
+        "aggregation"
+      ],
+      "notes": "Both failed (baseline: no such column: bs.striker; system: no such column: bs.player_id)"
+    }
+  ],
+  "metrics": {
+    "total_queries": 1,
+    "complex_queries": 1,
+    "total_runtime_sec": 26.683,
+    "avg_query_runtime_sec": 26.683,
+    "baseline_accuracy": 0.0,
+    "system_accuracy": 0.0,
+    "improvement": 0.0,
+    "improvement_percent": 0.0,
+    "baseline_execution_success_rate": 0.0,
+    "system_execution_success_rate": 0.0,
+    "baseline_incorrect_sql": 1,
+    "system_incorrect_sql": 1,
+    "baseline_wrong_results": 0,
+    "system_wrong_results": 0,
+    "baseline_complex_query_accuracy": 0.0,
+    "system_complex_query_accuracy": 0.0,
+    "complex_query_accuracy": {
+      "baseline": 0.0,
+      "system": 0.0
+    },
+    "baseline_api_failures": 0,
+    "system_api_failures": 0,
+    "api_failures": 0,
+    "retry_success_rate": 0.0,
+    "semantic_corrections_used": 0,
+    "semantic_success_rate": 0.0,
+    "logical_error_reduction": 0.0
+  }
+}

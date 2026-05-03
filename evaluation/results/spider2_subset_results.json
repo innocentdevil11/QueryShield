@@ -1,0 +1,345 @@
+{
+  "experiment": "spider2_subset_fair_prompt",
+  "status": "completed",
+  "dataset_json": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\spider2_local_subset.json",
+  "db_root": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2",
+  "subset": {
+    "selected_db_ids": [
+      "IPL"
+    ],
+    "selected_count": 2,
+    "requested_num_dbs": 1,
+    "requested_num_queries": 2
+  },
+  "runtime_config": {
+    "llm_timeout_seconds": 35,
+    "max_correction_retries": 2,
+    "max_semantic_retries": 2,
+    "max_plan_validation_attempts": 3,
+    "use_semantic_loop": true,
+    "system_plan_based": true,
+    "api_max_retries": 1,
+    "api_recovery_rounds": 1,
+    "api_recovery_cooldown_seconds": 5,
+    "throttle_seconds": 0.0,
+    "api_budget_per_query": 10,
+    "pipeline_mode": "full",
+    "run_parallel": true
+  },
+  "results": [
+    {
+      "db_id": "IPL",
+      "example_id": "local022",
+      "question": "Retrieve the names of players who scored no less than 100 runs in a match while playing for the team that lost that match.",
+      "gold_sql": "-- Step 1: Calculate players' total runs in each match\nWITH player_runs AS (\n    SELECT \n        bbb.striker AS player_id, \n        bbb.match_id, \n        SUM(bsc.runs_scored) AS total_runs \n    FROM \n        ball_by_ball AS bbb\n    JOIN \n        batsman_scored AS bsc\n    ON \n        bbb.match_id = bsc.match_id \n        AND bbb.over_id = bsc.over_id \n        AND bbb.ball_id = bsc.ball_id \n        AND bbb.innings_no = bsc.innings_no\n    GROUP BY \n        bbb.striker, bbb.match_id\n    HAVING \n        SUM(bsc.runs_scored) >= 100\n),\n\n-- Step 2: Identify losing teams for each match\nlosing_teams AS (\n    SELECT \n        match_id, \n        CASE \n            WHEN match_winner = team_1 THEN team_2 \n            ELSE team_1 \n        END AS loser \n    FROM \n        match\n),\n\n-- Step 3: Combine the above results to get players who scored 100 or more runs in losing teams\nplayers_in_losing_teams AS (\n    SELECT \n        pr.player_id, \n        pr.match_id \n    FROM \n        player_runs AS pr\n    JOIN \n        losing_teams AS lt\n    ON \n        pr.match_id = lt.match_id\n    JOIN \n        player_match AS pm\n    ON \n        pr.player_id = pm.player_id \n        AND pr.match_id = pm.match_id \n        AND lt.loser = pm.team_id\n)\n\n-- Step 4: Select distinct player names from the player table\nSELECT DISTINCT \n    p.player_name \nFROM \n    player AS p\nJOIN \n    players_in_losing_teams AS plt\nON \n    p.player_id = plt.player_id\nORDER BY \n    p.player_name;",
+      "baseline_sql": "SELECT \n  p.player_name\nFROM \n  batsman_scored bs\n  JOIN ball_by_ball bb ON bs.match_id = bb.match_id AND bs.over_id = bb.over_id AND bs.ball_id = bb.ball_id\n  JOIN player p ON bs.striker = p.player_id OR bs.non_striker = p.player_id\n  JOIN ball_by_ball bb2 ON bs.match_id = bb2.match_id AND bs.over_id = bb2.over_id AND bs.ball_id = bb2.ball_id - 1\n  JOIN player p2 ON bb2.striker = p2.player_id OR bb2.non_striker = p2.player_id\nWHERE \n  bs.runs_scored >= 100\n  AND bb.team_bowling != bb2.team_batting;",
+      "system_sql": "SELECT SUM(bs.runs_scored) \nFROM batsman_scored bs \nJOIN ball_by_ball bb ON bs.match_id = bb.match_id AND bs.over_id = bb.over_id AND bs.ball_id = bb.ball_id AND bs.innings_no = bb.innings_no \nJOIN player p ON striker = p.player_id \nWHERE bs.runs_scored >= 100 AND bb.team_batting != bb.team_bowling;",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": false,
+      "system_execution_success": true,
+      "baseline_classification": "incorrect_sql",
+      "system_classification": "wrong_results",
+      "baseline_failure_type": "incorrect_sql",
+      "system_failure_type": "wrong_results",
+      "baseline_api_failures": 0,
+      "system_api_failures": 0,
+      "baseline_retries_used": 0,
+      "system_retries_used": 0,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "NOT_RUN",
+      "system_semantic_validation_reason": "deterministic_fix_applied",
+      "system_semantic_trace": [],
+      "system_plan": {
+        "intent": "filter+aggregation",
+        "tables": [
+          "batsman_scored",
+          "player",
+          "ball_by_ball"
+        ],
+        "joins": [
+          {
+            "left": "batsman_scored",
+            "right": "ball_by_ball",
+            "on": "batsman_scored.match_id=ball_by_ball.match_id AND batsman_scored.over_id=ball_by_ball.over_id AND batsman_scored.ball_id=ball_by_ball.ball_id AND batsman_scored.innings_no=ball_by_ball.innings_no"
+          },
+          {
+            "left": "batsman_scored",
+            "right": "ball_by_ball",
+            "on": "batsman_scored.match_id=ball_by_ball.match_id AND batsman_scored.over_id=ball_by_ball.over_id AND batsman_scored.ball_id=ball_by_ball.ball_id AND batsman_scored.innings_no=ball_by_ball.innings_no"
+          },
+          {
+            "left": "batsman_scored",
+            "right": "player",
+            "on": "batsman_scored.striker=player.player_id"
+          }
+        ],
+        "filters": [
+          "batsman_scored.runs_scored >= 100",
+          "ball_by_ball.team_batting != ball_by_ball.team_bowling"
+        ],
+        "aggregations": [
+          "SUM(batsman_scored.runs_scored)"
+        ],
+        "group_by": [
+          "player.player_id",
+          "player.player_name"
+        ],
+        "order_by": [],
+        "limit": "",
+        "subqueries": [],
+        "reasoning_steps": [
+          "Join batsman scored and ball by ball tables",
+          "Filter runs scored >= 100 and team batting != team bowling",
+          "Join batsman scored and player tables",
+          "Aggregate runs scored per player",
+          "Group by player"
+        ]
+      },
+      "system_plan_raw": "{\n\"intent\": \"filter+aggregation\",\n\"tables\": [\"batsman_scored\", \"player\", \"ball_by_ball\"],\n\"joins\": [\n{\"left\": \"batsman_scored\", \"right\": \"ball_by_ball\", \"on\": \"batsman_scored.match_id=ball_by_ball.match_id AND batsman_scored.over_id=ball_by_ball.over_id AND batsman_scored.ball_id=ball_by_ball.ball_id AND batsman_scored.innings_no=ball_by_ball.innings_no\"},\n{\"left\": \"batsman_scored\", \"right\": \"ball_by_ball\", \"on\": \"batsman_scored.match_id=ball_by_ball.match_id AND batsman_scored.over_id=ball_by_ball.over_id AND batsman_scored.ball_id=ball_by_ball.ball_id AND batsman_scored.innings_no=ball_by_ball.innings_no\"},\n{\"left\": \"batsman_scored\", \"right\": \"player\", \"on\": \"batsman_scored.striker=player.player_id\"}\n],\n\"filters\": [\"batsman_scored.runs_scored >= 100\", \"ball_by_ball.team_batting != ball_by_ball.team_bowling\"],\n\"aggregations\": [\"SUM(batsman_scored.runs_scored)\"],\n\"group_by\": [\"player.player_id\", \"player.player_name\"],\n\"order_by\": [],\n\"limit\": \"\",\n\"subqueries\": [],\n\"reasoning_steps\": [\"Join batsman scored and ball by ball tables\", \"Filter runs scored >= 100 and team batting != team bowling\", \"Join batsman scored and player tables\", \"Aggregate runs scored per player\", \"Group by player\"]\n}",
+      "system_plan_parse_error": "",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 1.0,
+      "system_plan_quality_reasons": [],
+      "system_planner_api_failures": 0,
+      "system_planner_retries_used": 0,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 0,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [
+        {
+          "attempts_used": 1,
+          "decision": "VALID",
+          "confidence": 0.8,
+          "sql_before": "SELECT SUM(batsman_scored.runs_scored) \nFROM batsman_scored \nJOIN ball_by_ball ON batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id AND batsman_scored.innings_no = ball_by_ball.innings_no \nJOIN ball_by_ball AS ball_by_ball_1 ON batsman_scored.match_id = ball_by_ball_1.match_id AND batsman_scored.over_id = ball_by_ball_1.over_id AND batsman_scored.ball_id = ball_by_ball_1.ball_id AND batsman_scored.innings_no = ball_by_ball_1.innings_no \nJOIN player ON batsman_scored.striker = player.player_id \nWHERE batsman_scored.runs_scored >= 100 AND ball_by_ball.team_batting != ball_by_ball.team_bowling;",
+          "validation_issues": [],
+          "sql_after": "SELECT SUM(batsman_scored.runs_scored) \nFROM batsman_scored \nJOIN ball_by_ball ON batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id AND batsman_scored.innings_no = ball_by_ball.innings_no \nJOIN ball_by_ball AS ball_by_ball_1 ON batsman_scored.match_id = ball_by_ball_1.match_id AND batsman_scored.over_id = ball_by_ball_1.over_id AND batsman_scored.ball_id = ball_by_ball_1.ball_id AND batsman_scored.innings_no = ball_by_ball_1.innings_no \nJOIN player ON batsman_scored.striker = player.player_id \nWHERE batsman_scored.runs_scored >= 100 AND ball_by_ball.team_batting != ball_by_ball.team_bowling;",
+          "note": "valid"
+        },
+        {
+          "attempts_used": 1,
+          "decision": "INVALID",
+          "confidence": 0.5,
+          "sql_before": "SELECT SUM(bs.runs_scored) \nFROM batsman_scored bs \nJOIN ball_by_ball bb ON bs.match_id = bb.match_id AND bs.over_id = bb.over_id AND bs.ball_id = bb.ball_id AND bs.innings_no = bb.innings_no \nJOIN player p ON bs.striker = p.player_id \nWHERE bs.runs_scored >= 100 AND bb.team_batting != bb.team_bowling;",
+          "validation_issues": [],
+          "sql_after": "SELECT SUM(bs.runs_scored) \nFROM batsman_scored bs \nJOIN ball_by_ball bb ON bs.match_id = bb.match_id AND bs.over_id = bb.over_id AND bs.ball_id = bb.ball_id AND bs.innings_no = bb.innings_no \nJOIN player p ON bs.striker = p.player_id \nWHERE bs.runs_scored >= 100 AND bb.team_batting != bb.team_bowling;",
+          "note": "low_confidence_invalidation"
+        }
+      ],
+      "system_plan_validation_attempts_used": 2,
+      "baseline_runtime_sec": 0.0,
+      "system_runtime_sec": 0.0,
+      "query_runtime_sec": 33.401,
+      "attempts_used": 2,
+      "winner": "system",
+      "baseline_error": "no such column: bs.striker",
+      "system_error": null,
+      "is_complex": true,
+      "complexity_score": 13,
+      "complexity_reasons": [
+        "joins:3",
+        "nested-select",
+        "group-by",
+        "having",
+        "aggregation"
+      ],
+      "notes": "System recovered baseline failure: no such column: bs.striker",
+      "budget_exhausted_stages": [],
+      "budget_log": [
+        "planner:1",
+        "sql_generation:1",
+        "plan_validation:1",
+        "execution_correction:1",
+        "sql_generation:1",
+        "plan_validation:1"
+      ],
+      "plan_validator_confidence": 0.5,
+      "invalidation_severity_breakdown": {
+        "CRITICAL": 1
+      },
+      "deterministic_fixes_applied": [
+        "deterministic:column_fuzzy_match:batsman_scored.striker:still_failed",
+        "deterministic:column_fuzzy_match:bs.striker"
+      ],
+      "llm_corrections_saved": 1,
+      "parallel_winner": "tie",
+      "schema_pre_validation_result": {
+        "valid": true,
+        "errors": [],
+        "warnings": []
+      },
+      "pipeline_mode": "full"
+    },
+    {
+      "db_id": "IPL",
+      "example_id": "local023",
+      "question": "Please help me find the names of top 5 players with the highest average runs per match in season 5, along with their batting averages.",
+      "gold_sql": "WITH runs_scored AS (\n    SELECT \n        bb.striker AS player_id,\n        bb.match_id,\n        bs.runs_scored AS runs\n    FROM \n        ball_by_ball AS bb\n    JOIN \n        batsman_scored AS bs ON bb.match_id = bs.match_id \n            AND bb.over_id = bs.over_id \n            AND bb.ball_id = bs.ball_id \n            AND bb.innings_no = bs.innings_no\n    WHERE \n        bb.match_id IN (SELECT match_id FROM match WHERE season_id = 5)\n),\ntotal_runs AS (\n    SELECT \n        player_id, \n        match_id, \n        SUM(runs) AS total_runs \n    FROM \n        runs_scored \n    GROUP BY \n        player_id, match_id\n),\nbatting_averages AS (\n    SELECT \n        player_id, \n        SUM(total_runs) AS runs, \n        COUNT(match_id) AS num_matches,\n        ROUND(SUM(total_runs) / CAST(COUNT(match_id) AS FLOAT), 3) AS batting_avg\n    FROM \n        total_runs \n    GROUP BY \n        player_id \n    ORDER BY \n        batting_avg DESC \n    LIMIT 5\n)\nSELECT \n    p.player_name,\n    b.batting_avg\nFROM \n    player AS p\nJOIN \n    batting_averages AS b ON p.player_id = b.player_id\nORDER BY \n    b.batting_avg DESC;",
+      "baseline_sql": "",
+      "system_sql": "SELECT p.player_name, SUM(bs.runs_scored) / COUNT(bs.ball_id) AS batting_average \nFROM batsman_scored bs \nJOIN ball_by_ball bb ON bs.match_id = bb.match_id AND bs.over_id = bb.over_id AND bs.ball_id = bb.ball_id \nJOIN player p ON p.player_id = bb.striker \nWHERE bb.season_year = 5 \nGROUP BY p.player_name \nORDER BY batting_average DESC \nLIMIT 5;",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": false,
+      "system_execution_success": false,
+      "baseline_classification": "api_error",
+      "system_classification": "incorrect_sql",
+      "baseline_failure_type": "api_error",
+      "system_failure_type": "incorrect_sql",
+      "baseline_api_failures": 1,
+      "system_api_failures": 0,
+      "baseline_retries_used": 1,
+      "system_retries_used": 3,
+      "baseline_retry_success": false,
+      "system_retry_success": true,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "NOT_RUN",
+      "system_semantic_validation_reason": "execution_failed",
+      "system_semantic_trace": [],
+      "system_plan": {
+        "intent": "Please help me find the names of top 5 players with the highest average runs per match in season 5, along with their batting averages.",
+        "tables": [],
+        "joins": [],
+        "filters": [],
+        "aggregations": [],
+        "group_by": [],
+        "order_by": [],
+        "limit": "",
+        "subqueries": [],
+        "reasoning_steps": [
+          "Planner failed due to API error. Fallback intent-only plan was used."
+        ]
+      },
+      "system_plan_raw": "",
+      "system_plan_parse_error": "planner_api_error: api_error: Groq request failed. Check network, API key, and model name.",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 0.9,
+      "system_plan_quality_reasons": [
+        "tables"
+      ],
+      "system_planner_api_failures": 1,
+      "system_planner_retries_used": 1,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 0,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [
+        {
+          "attempts_used": 1,
+          "decision": "VALID",
+          "confidence": 0.8,
+          "sql_before": "SELECT p.player_name, SUM(bs.runs_scored) / COUNT(*) AS batting_average \nFROM batsman_scored bs \nJOIN ball_by_ball bb ON bs.match_id = bb.match_id AND bs.over_id = bb.over_id AND bs.ball_id = bb.ball_id \nJOIN player p ON p.player_id = bb.striker \nWHERE bb.season = 5 \nGROUP BY p.player_name \nORDER BY batting_average DESC \nLIMIT 5;",
+          "validation_issues": [],
+          "sql_after": "SELECT p.player_name, SUM(bs.runs_scored) / COUNT(*) AS batting_average \nFROM batsman_scored bs \nJOIN ball_by_ball bb ON bs.match_id = bb.match_id AND bs.over_id = bb.over_id AND bs.ball_id = bb.ball_id \nJOIN player p ON p.player_id = bb.striker \nWHERE bb.season = 5 \nGROUP BY p.player_name \nORDER BY batting_average DESC \nLIMIT 5;",
+          "note": "valid"
+        },
+        {
+          "attempts_used": 1,
+          "decision": "VALID",
+          "confidence": 0.5,
+          "sql_before": "SELECT p.player_name, SUM(bs.runs_scored) / COUNT(bs.ball_id) AS batting_average \nFROM batsman_scored bs \nJOIN ball_by_ball bb ON bs.match_id = bb.match_id AND bs.over_id = bb.over_id AND bs.ball_id = bb.ball_id \nJOIN player p ON p.player_id = bb.striker \nWHERE bb.season_year = 5 \nGROUP BY p.player_name \nORDER BY batting_average DESC \nLIMIT 5;",
+          "validation_issues": [],
+          "sql_after": "SELECT p.player_name, SUM(bs.runs_scored) / COUNT(bs.ball_id) AS batting_average \nFROM batsman_scored bs \nJOIN ball_by_ball bb ON bs.match_id = bb.match_id AND bs.over_id = bb.over_id AND bs.ball_id = bb.ball_id \nJOIN player p ON p.player_id = bb.striker \nWHERE bb.season_year = 5 \nGROUP BY p.player_name \nORDER BY batting_average DESC \nLIMIT 5;",
+          "note": "valid"
+        }
+      ],
+      "system_plan_validation_attempts_used": 2,
+      "baseline_runtime_sec": 0.0,
+      "system_runtime_sec": 0.0,
+      "query_runtime_sec": 30.447,
+      "attempts_used": 3,
+      "winner": "tie",
+      "baseline_error": "api_error: Groq request failed. Check network, API key, and model name.",
+      "system_error": "no such column: bb.season_year",
+      "is_complex": true,
+      "complexity_score": 13,
+      "complexity_reasons": [
+        "joins:1",
+        "nested-select",
+        "group-by",
+        "order-by",
+        "limit",
+        "subquery-filter",
+        "aggregation",
+        "ambiguous-nl"
+      ],
+      "notes": "Both failed (baseline: api_error: Groq request failed. Check network, API key, and model name.; system: no such column: bb.season_year)",
+      "budget_exhausted_stages": [],
+      "budget_log": [
+        "planner:1",
+        "sql_generation:1",
+        "plan_validation:1",
+        "execution_correction:1",
+        "sql_generation:1",
+        "sql_generation:1",
+        "plan_validation:1"
+      ],
+      "plan_validator_confidence": 0.5,
+      "invalidation_severity_breakdown": {},
+      "deterministic_fixes_applied": [
+        "deterministic:column_fuzzy_match:bb.season:still_failed"
+      ],
+      "llm_corrections_saved": 0,
+      "parallel_winner": "tie",
+      "schema_pre_validation_result": {
+        "valid": true,
+        "errors": [],
+        "warnings": []
+      },
+      "pipeline_mode": "full"
+    }
+  ],
+  "metrics": {
+    "total_queries": 2,
+    "complex_queries": 2,
+    "total_runtime_sec": 63.848,
+    "avg_query_runtime_sec": 31.924,
+    "baseline_accuracy": 0.0,
+    "system_accuracy": 0.0,
+    "final_accuracy": 0.0,
+    "improvement": 0.0,
+    "improvement_percent": 0.0,
+    "baseline_execution_success_rate": 0.0,
+    "system_execution_success_rate": 0.5,
+    "baseline_incorrect_sql": 1,
+    "system_incorrect_sql": 1,
+    "baseline_wrong_results": 0,
+    "system_wrong_results": 1,
+    "baseline_complex_query_accuracy": 0.0,
+    "system_complex_query_accuracy": 0.0,
+    "complex_query_accuracy": {
+      "baseline": 0.0,
+      "system": 0.0
+    },
+    "baseline_api_failures": 1,
+    "system_api_failures": 0,
+    "api_failures": 1,
+    "retry_success_rate": 1.0,
+    "semantic_corrections_used": 0,
+    "semantic_success_rate": 0.0,
+    "plan_quality": {
+      "avg_score": 0.95,
+      "high_rate": 1.0,
+      "count": 2
+    },
+    "plan_quality_avg": 0.95,
+    "plan_validation_failures": 0,
+    "plan_correction_success_rate": 0.0,
+    "logical_error_reduction": 0.0
+  },
+  "adjusted_metrics": {
+    "adjusted_accuracy": 0.0,
+    "system_exclusive_wins": 0,
+    "baseline_exclusive_wins": 0,
+    "both_correct": 0,
+    "both_wrong": 2,
+    "system_win_rate": 0.0,
+    "baseline_fallback_rate": 0.0,
+    "tie_rate": 100.0,
+    "deterministic_fixes_total": 3,
+    "llm_corrections_saved_total": 1,
+    "budget_exhaustion_rate": 0.0
+  }
+}

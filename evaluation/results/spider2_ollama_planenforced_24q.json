@@ -1,0 +1,331 @@
+{
+  "experiment": "spider2_subset_fair_prompt",
+  "status": "in_progress",
+  "completed_queries": 2,
+  "total_queries": 24,
+  "dataset_json": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\spider2_local_subset.json",
+  "db_root": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\local_sqlite_dbs",
+  "subset": {
+    "selected_db_ids": [
+      "IPL",
+      "E_commerce",
+      "sqlite-sakila",
+      "Pagila",
+      "modern_data",
+      "f1",
+      "California_Traffic_Collision",
+      "WWE",
+      "EU_soccer",
+      "Brazilian_E_Commerce",
+      "delivery_center",
+      "Baseball",
+      "education_business",
+      "bank_sales_trading",
+      "EntertainmentAgency",
+      "Db-IMDB"
+    ],
+    "selected_count": 24,
+    "requested_num_dbs": 16,
+    "requested_num_queries": 24
+  },
+  "runtime_config": {
+    "llm_timeout_seconds": 240,
+    "max_correction_retries": 1,
+    "max_semantic_retries": 0,
+    "max_plan_validation_attempts": 3,
+    "use_semantic_loop": true,
+    "system_plan_based": true,
+    "api_max_retries": 1,
+    "api_recovery_rounds": 2,
+    "api_recovery_cooldown_seconds": 20,
+    "throttle_seconds": 0.0
+  },
+  "results": [
+    {
+      "db_id": "IPL",
+      "example_id": "local022",
+      "question": "Retrieve the names of players who scored no less than 100 runs in a match while playing for the team that lost that match.",
+      "gold_sql": "-- Step 1: Calculate players' total runs in each match\nWITH player_runs AS (\n    SELECT \n        bbb.striker AS player_id, \n        bbb.match_id, \n        SUM(bsc.runs_scored) AS total_runs \n    FROM \n        ball_by_ball AS bbb\n    JOIN \n        batsman_scored AS bsc\n    ON \n        bbb.match_id = bsc.match_id \n        AND bbb.over_id = bsc.over_id \n        AND bbb.ball_id = bsc.ball_id \n        AND bbb.innings_no = bsc.innings_no\n    GROUP BY \n        bbb.striker, bbb.match_id\n    HAVING \n        SUM(bsc.runs_scored) >= 100\n),\n\n-- Step 2: Identify losing teams for each match\nlosing_teams AS (\n    SELECT \n        match_id, \n        CASE \n            WHEN match_winner = team_1 THEN team_2 \n            ELSE team_1 \n        END AS loser \n    FROM \n        match\n),\n\n-- Step 3: Combine the above results to get players who scored 100 or more runs in losing teams\nplayers_in_losing_teams AS (\n    SELECT \n        pr.player_id, \n        pr.match_id \n    FROM \n        player_runs AS pr\n    JOIN \n        losing_teams AS lt\n    ON \n        pr.match_id = lt.match_id\n    JOIN \n        player_match AS pm\n    ON \n        pr.player_id = pm.player_id \n        AND pr.match_id = pm.match_id \n        AND lt.loser = pm.team_id\n)\n\n-- Step 4: Select distinct player names from the player table\nSELECT DISTINCT \n    p.player_name \nFROM \n    player AS p\nJOIN \n    players_in_losing_teams AS plt\nON \n    p.player_id = plt.player_id\nORDER BY \n    p.player_name;",
+      "baseline_sql": "WITH PlayerRuns AS (\n    -- Calculate total runs scored by each player in each match\n    SELECT\n        T1.match_id,\n        T1.striker AS player_id,\n        SUM(T2.runs_scored) AS total_runs\n    FROM ball_by_ball AS T1\n    JOIN batsman_scored AS T2\n        ON T1.match_id = T2.match_id\n        AND T1.over_id = T2.over_id\n        AND T1.ball_id = T2.ball_id\n        AND T1.innings_no = T2.innings_no\n    GROUP BY\n        T1.match_id,\n        T1.striker\n    HAVING\n        SUM(T2.runs_scored) >= 100\n), LosingTeam AS (\n    -- Determine the ID of the team that lost the match\n    SELECT\n        match_id,\n        CASE\n            WHEN match_winner = team_1 THEN team_2\n            WHEN match_winner = team_2 THEN team_1\n            ELSE NULL\n        END AS losing_team_id\n    FROM match\n    WHERE match_winner IS NOT NULL\n)\nSELECT DISTINCT\n    P.player_name\nFROM PlayerRuns AS PR\nJOIN LosingTeam AS LT\n    ON PR.match_id = LT.match_id\nJOIN player_match AS PM\n    ON PR.match_id = PM.match_id\n    AND PR.player_id = PM.player_id\nJOIN player AS P\n    ON PR.player_id = P.player_id\nWHERE\n    -- The player's team must match the losing team of that match\n    PM.team_id = LT.losing_team_id;",
+      "system_sql": "SELECT\n  SUM(T1.runs_scored) AS total_runs_scored,\n  T4.player_name,\n  T2.match_id\nFROM batsman_scored AS T1\nJOIN ball_by_ball AS T5\n  ON T1.match_id = T5.match_id AND T1.over_id = T5.over_id AND T1.ball_id = T5.ball_id\nJOIN player_match AS T2\n  ON T2.match_id = T5.match_id AND T2.player_id = T5.striker\nJOIN match AS T3\n  ON T3.match_id = T2.match_id\nJOIN player AS T4\n  ON T4.player_id = T2.player_id\nWHERE\n  T2.team_id != T3.match_winner\nGROUP BY\n  T4.player_name,\n  T2.match_id\nHAVING\n  SUM(T1.runs_scored) >= 100;",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": true,
+      "system_execution_success": true,
+      "baseline_classification": "wrong_results",
+      "system_classification": "wrong_results",
+      "baseline_failure_type": "wrong_results",
+      "system_failure_type": "wrong_results",
+      "baseline_api_failures": 0,
+      "system_api_failures": 0,
+      "baseline_retries_used": 0,
+      "system_retries_used": 1,
+      "baseline_retry_success": false,
+      "system_retry_success": true,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "VALID",
+      "system_semantic_validation_reason": "",
+      "system_semantic_trace": [
+        {
+          "step": "initial_validation",
+          "decision": "VALID",
+          "reason": "",
+          "sql_before": "SELECT\n  SUM(T1.runs_scored) AS total_runs_scored,\n  T4.player_name,\n  T2.match_id\nFROM batsman_scored AS T1\nJOIN ball_by_ball AS T5\n  ON T1.match_id = T5.match_id AND T1.over_id = T5.over_id AND T1.ball_id = T5.ball_id\nJOIN player_match AS T2\n  ON T2.match_id = T5.match_id AND T2.player_id = T5.striker\nJOIN match AS T3\n  ON T3.match_id = T2.match_id\nJOIN player AS T4\n  ON T4.player_id = T2.player_id\nWHERE\n  T2.team_id != T3.match_winner\nGROUP BY\n  T4.player_name,\n  T2.match_id\nHAVING\n  SUM(T1.runs_scored) >= 100;",
+          "sql_after": "SELECT\n  SUM(T1.runs_scored) AS total_runs_scored,\n  T4.player_name,\n  T2.match_id\nFROM batsman_scored AS T1\nJOIN ball_by_ball AS T5\n  ON T1.match_id = T5.match_id AND T1.over_id = T5.over_id AND T1.ball_id = T5.ball_id\nJOIN player_match AS T2\n  ON T2.match_id = T5.match_id AND T2.player_id = T5.striker\nJOIN match AS T3\n  ON T3.match_id = T2.match_id\nJOIN player AS T4\n  ON T4.player_id = T2.player_id\nWHERE\n  T2.team_id != T3.match_winner\nGROUP BY\n  T4.player_name,\n  T2.match_id\nHAVING\n  SUM(T1.runs_scored) >= 100;",
+          "result_row_count": 0,
+          "validator_api_error": null
+        }
+      ],
+      "system_plan": {
+        "intent": "Filtering and Aggregation",
+        "tables": [
+          "batsman_scored",
+          "ball_by_ball",
+          "player_match",
+          "match",
+          "player"
+        ],
+        "joins": [
+          {
+            "left": "batsman_scored",
+            "right": "ball_by_ball",
+            "on": "batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id"
+          },
+          {
+            "left": "player_match",
+            "right": "ball_by_ball",
+            "on": "player_match.match_id = ball_by_ball.match_id AND player_match.player_id = ball_by_ball.striker"
+          },
+          {
+            "left": "match",
+            "right": "player_match",
+            "on": "match.match_id = player_match.match_id"
+          },
+          {
+            "left": "player",
+            "right": "player_match",
+            "on": "player.player_id = player_match.player_id"
+          }
+        ],
+        "filters": [
+          "Player's team ID must not match the match_winner ID (i.e., the player played for the losing team)."
+        ],
+        "aggregations": [
+          "SUM(batsman_scored.runs_scored)"
+        ],
+        "group_by": [
+          "player.player_name",
+          "player_match.match_id"
+        ],
+        "order_by": [],
+        "limit": "",
+        "subqueries": [
+          "Calculate the total runs scored by each player (striker) in each match.",
+          "Filter the results to include only matches where the player's team ID matches the losing team ID (i.e., team_id != match_winner).",
+          "Filter the aggregated results to keep only those matches where the total runs scored are 100 or more."
+        ],
+        "reasoning_steps": [
+          "Step 1: Join 'batsman_scored' and 'ball_by_ball' on match_id, over_id, and ball_id. This links the runs scored to the specific player (striker) who scored them.",
+          "Step 2: Join the result from Step 1 with 'player_match' on match_id and striker = player_id. This confirms the player's team for that match.",
+          "Step 3: Join the result from Step 2 with 'match' on match_id to determine the match winner.",
+          "Step 4: Group the results by player_id and match_id, and calculate the SUM of runs_scored for each player in each match.",
+          "Step 5: Filter the grouped results (using HAVING) to ensure the total runs scored are >= 100.",
+          "Step 6: Apply a filter (WHERE or HAVING) to ensure the player's team_id (from player_match) is NOT equal to the match_winner (from match). This identifies players who played for the losing team.",
+          "Step 7: Join the final filtered results with the 'player' table to retrieve the player's name."
+        ]
+      },
+      "system_plan_raw": "```json\n{\n  \"intent\": \"Filtering and Aggregation\",\n  \"tables\": [\n    \"batsman_scored\",\n    \"ball_by_ball\",\n    \"player_match\",\n    \"match\",\n    \"player\"\n  ],\n  \"joins\": [\n    {\n      \"left\": \"batsman_scored\",\n      \"right\": \"ball_by_ball\",\n      \"on\": \"batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id\"\n    },\n    {\n      \"left\": \"player_match\",\n      \"right\": \"ball_by_ball\",\n      \"on\": \"player_match.match_id = ball_by_ball.match_id AND player_match.player_id = ball_by_ball.striker\"\n    },\n    {\n      \"left\": \"match\",\n      \"right\": \"player_match\",\n      \"on\": \"match.match_id = player_match.match_id\"\n    },\n    {\n      \"left\": \"player\",\n      \"right\": \"player_match\",\n      \"on\": \"player.player_id = player_match.player_id\"\n    }\n  ],\n  \"filters\": [\n    \"Player's team ID must not match the match_winner ID (i.e., the player played for the losing team).\"\n  ],\n  \"aggregations\": [\n    \"SUM(batsman_scored.runs_scored)\"\n  ],\n  \"group_by\": [\n    \"player.player_name\",\n    \"player_match.match_id\"\n  ],\n  \"order_by\": [],\n  \"limit\": null,\n  \"subqueries\": [\n    \"Calculate the total runs scored by each player (striker) in each match.\",\n    \"Filter the results to include only matches where the player's team ID matches the losing team ID (i.e., team_id != match_winner).\",\n    \"Filter the aggregated results to keep only those matches where the total runs scored are 100 or more.\"\n  ],\n  \"reasoning_steps\": [\n    \"Step 1: Join 'batsman_scored' and 'ball_by_ball' on match_id, over_id, and ball_id. This links the runs scored to the specific player (striker) who scored them.\",\n    \"Step 2: Join the result from Step 1 with 'player_match' on match_id and striker = player_id. This confirms the player's team for that match.\",\n    \"Step 3: Join the result from Step 2 with 'match' on match_id to determine the match winner.\",\n    \"Step 4: Group the results by player_id and match_id, and calculate the SUM of runs_scored for each player in each match.\",\n    \"Step 5: Filter the grouped results (using HAVING) to ensure the total runs scored are >= 100.\",\n    \"Step 6: Apply a filter (WHERE or HAVING) to ensure the player's team_id (from player_match) is NOT equal to the match_winner (from match). This identifies players who played for the losing team.\",\n    \"Step 7: Join the final filtered results with the 'player' table to retrieve the player's name.\"\n  ]\n}\n```",
+      "system_plan_parse_error": "",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 1.0,
+      "system_plan_quality_reasons": [],
+      "system_planner_api_failures": 0,
+      "system_planner_retries_used": 0,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 0,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [
+        {
+          "attempts_used": 1,
+          "decision": "VALID",
+          "sql_before": "SELECT\n  SUM(T1.runs_scored) AS total_runs_scored,\n  T4.player_name,\n  T2.match_id\nFROM batsman_scored AS T1\nJOIN ball_by_ball AS T5\n  ON T1.match_id = T5.match_id AND T1.over_id = T5.over_id AND T1.ball_id = T5.ball_id\nJOIN player_match AS T2\n  ON T2.match_id = T5.match_id AND T2.player_id = T5.striker\nJOIN match AS T3\n  ON T3.match_id = T2.match_id\nJOIN player AS T4\n  ON T4.player_id = T2.player_id\nWHERE\n  T2.team_id != T3.match_winner\nGROUP BY\n  T4.player_name,\n  T2.match_id\nHAVING\n  SUM(T1.runs_scored) >= 100;",
+          "validation_issues": [],
+          "sql_after": "SELECT\n  SUM(T1.runs_scored) AS total_runs_scored,\n  T4.player_name,\n  T2.match_id\nFROM batsman_scored AS T1\nJOIN ball_by_ball AS T5\n  ON T1.match_id = T5.match_id AND T1.over_id = T5.over_id AND T1.ball_id = T5.ball_id\nJOIN player_match AS T2\n  ON T2.match_id = T5.match_id AND T2.player_id = T5.striker\nJOIN match AS T3\n  ON T3.match_id = T2.match_id\nJOIN player AS T4\n  ON T4.player_id = T2.player_id\nWHERE\n  T2.team_id != T3.match_winner\nGROUP BY\n  T4.player_name,\n  T2.match_id\nHAVING\n  SUM(T1.runs_scored) >= 100;"
+        }
+      ],
+      "system_plan_validation_attempts_used": 1,
+      "baseline_runtime_sec": 141.212,
+      "system_runtime_sec": 1034.142,
+      "query_runtime_sec": 1175.356,
+      "attempts_used": 1,
+      "winner": "tie",
+      "baseline_error": null,
+      "system_error": null,
+      "is_complex": true,
+      "complexity_score": 13,
+      "complexity_reasons": [
+        "joins:3",
+        "nested-select",
+        "group-by",
+        "having",
+        "aggregation"
+      ],
+      "notes": "Both produced similar outcome."
+    },
+    {
+      "db_id": "E_commerce",
+      "example_id": "local003",
+      "question": "According to the RFM definition document, calculate the average sales per order for each customer within distinct RFM segments, considering only 'delivered' orders. Use the customer unique identifier. Clearly define how to calculate Recency based on the latest purchase timestamp and specify the criteria for classifying RFM segments. The average sales should be computed as the total spend divided by the total number of orders. Please analyze and report the differences in average sales across the RFM segments",
+      "gold_sql": "WITH RecencyScore AS (\n    SELECT customer_unique_id,\n           MAX(order_purchase_timestamp) AS last_purchase,\n           NTILE(5) OVER (ORDER BY MAX(order_purchase_timestamp) DESC) AS recency\n    FROM orders\n        JOIN customers USING (customer_id)\n    WHERE order_status = 'delivered'\n    GROUP BY customer_unique_id\n),\nFrequencyScore AS (\n    SELECT customer_unique_id,\n           COUNT(order_id) AS total_orders,\n           NTILE(5) OVER (ORDER BY COUNT(order_id) DESC) AS frequency\n    FROM orders\n        JOIN customers USING (customer_id)\n    WHERE order_status = 'delivered'\n    GROUP BY customer_unique_id\n),\nMonetaryScore AS (\n    SELECT customer_unique_id,\n           SUM(price) AS total_spent,\n           NTILE(5) OVER (ORDER BY SUM(price) DESC) AS monetary\n    FROM orders\n        JOIN order_items USING (order_id)\n        JOIN customers USING (customer_id)\n    WHERE order_status = 'delivered'\n    GROUP BY customer_unique_id\n),\n\n-- 2. Assign each customer to a group\nRFM AS (\n    SELECT last_purchase, total_orders, total_spent,\n        CASE\n            WHEN recency = 1 AND frequency + monetary IN (1, 2, 3, 4) THEN \"Champions\"\n            WHEN recency IN (4, 5) AND frequency + monetary IN (1, 2) THEN \"Can't Lose Them\"\n            WHEN recency IN (4, 5) AND frequency + monetary IN (3, 4, 5, 6) THEN \"Hibernating\"\n            WHEN recency IN (4, 5) AND frequency + monetary IN (7, 8, 9, 10) THEN \"Lost\"\n            WHEN recency IN (2, 3) AND frequency + monetary IN (1, 2, 3, 4) THEN \"Loyal Customers\"\n            WHEN recency = 3 AND frequency + monetary IN (5, 6) THEN \"Needs Attention\"\n            WHEN recency = 1 AND frequency + monetary IN (7, 8) THEN \"Recent Users\"\n            WHEN recency = 1 AND frequency + monetary IN (5, 6) OR\n                recency = 2 AND frequency + monetary IN (5, 6, 7, 8) THEN \"Potentital Loyalists\"\n            WHEN recency = 1 AND frequency + monetary IN (9, 10) THEN \"Price Sensitive\"\n            WHEN recency = 2 AND frequency + monetary IN (9, 10) THEN \"Promising\"\n            WHEN recency = 3 AND frequency + monetary IN (7, 8, 9, 10) THEN \"About to Sleep\"\n        END AS RFM_Bucket\n    FROM RecencyScore\n        JOIN FrequencyScore USING (customer_unique_id)\n        JOIN MonetaryScore USING (customer_unique_id)\n)\n\nSELECT RFM_Bucket, \n       AVG(total_spent / total_orders) AS avg_sales_per_customer\nFROM RFM\nGROUP BY RFM_Bucket",
+      "baseline_sql": "WITH CustomerMetrics AS (\n    -- Step 1: Calculate Recency (R), Frequency (F), and Monetary (M) for each customer\n    SELECT\n        o.customer_id,\n        MAX(o.order_purchase_timestamp) AS Recency,\n        COUNT(DISTINCT o.order_id) AS Frequency,\n        SUM(op.payment_value) AS Monetary\n    FROM\n        orders o\n    JOIN\n        order_payments op ON o.order_id = op.order_id\n    WHERE\n        o.order_status = 'delivered'\n    GROUP BY\n        o.customer_id\n),\nRFMSegmentation AS (\n    -- Step 2: Assign RFM segments based on calculated metrics\n    -- NOTE: Standard RFM segmentation requires defined thresholds (e.g., quartiles or specific date ranges).\n    -- For this query, we use a simplified segmentation logic based on relative performance (High/Medium/Low)\n    -- to demonstrate the grouping required by the prompt.\n    SELECT\n        *,\n        CASE\n            -- High R (Recent) and High F and High M\n            WHEN Recency >= date('now', '-30 days') AND Frequency >= 5 AND Monetary >= 1000 THEN 'Champions'\n            -- High R and High F\n            WHEN Recency >= date('now', '-30 days') AND Frequency >= 3 THEN 'Loyal Customers'\n            -- High M\n            WHEN Monetary >= 1500 THEN 'High Value'\n            -- Medium R and Medium F\n            WHEN Recency >= date('now', '-90 days') AND Frequency >= 2 THEN 'Potential'\n            ELSE 'Needs Attention'\n        END AS RFM_Segment\n    FROM\n        CustomerMetrics\n)\n-- Step 3: Calculate the average sales per order for each segment\nSELECT\n    RFM_Segment,\n    AVG(CAST(Monetary AS REAL) / Frequency) AS Average_Sales_Per_Order\nFROM\n    RFMSegmentation\nGROUP BY\n    RFM_Segment\nORDER BY\n    Average_Sales_Per_Order DESC;",
+      "system_sql": "WITH CTE_Customer_Metrics AS (\n    -- Step 1: Calculate Core Customer Metrics (R, F, M)\n    SELECT\n        T1.customer_id,\n        SUM(T2.price) AS Monetary,\n        COUNT(DISTINCT T1.order_id) AS Frequency,\n        MAX(T1.order_purchase_timestamp) AS Recency\n    FROM\n        orders AS T1\n    INNER JOIN\n        order_items AS T2\n        ON T1.order_id = T2.order_id\n    WHERE\n        T1.order_status = 'delivered'\n    GROUP BY\n        T1.customer_id\n),\nCTE_RFM_Segmentation AS (\n    -- Step 2: Define RFM Segmentation (Placeholder logic based on plan description)\n    SELECT\n        customer_id,\n        Monetary,\n        Frequency,\n        Recency,\n        -- Placeholder logic to assign RFM_Segment based on R, F, M\n        CASE\n            WHEN Recency > '2018-01-01' AND Frequency >= 5 AND Monetary >= 1000 THEN 'Champions'\n            WHEN Recency > '2018-01-01' AND Frequency < 3 THEN 'At Risk'\n            ELSE 'Other'\n        END AS RFM_Segment\n    FROM\n        CTE_Customer_Metrics\n)\n-- Step 3 & 4: Calculate Average Sales per Order per Segment and Final Output\nSELECT\n    RFM_Segment,\n    CAST(SUM(Monetary) AS REAL) / NULLIF(SUM(Frequency), 0) AS average_sales_per_order\nFROM\n    CTE_RFM_Segmentation\nGROUP BY\n    RFM_Segment\nORDER BY\n    RFM_Segment;",
+      "baseline_correct": true,
+      "system_correct": true,
+      "baseline_execution_success": true,
+      "system_execution_success": true,
+      "baseline_classification": "success",
+      "system_classification": "success",
+      "baseline_failure_type": "success",
+      "system_failure_type": "success",
+      "baseline_api_failures": 0,
+      "system_api_failures": 0,
+      "baseline_retries_used": 1,
+      "system_retries_used": 0,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "VALID",
+      "system_semantic_validation_reason": "",
+      "system_semantic_trace": [
+        {
+          "step": "initial_validation",
+          "decision": "VALID",
+          "reason": "",
+          "sql_before": "WITH CTE_Customer_Metrics AS (\n    -- Step 1: Calculate Core Customer Metrics (R, F, M)\n    SELECT\n        T1.customer_id,\n        SUM(T2.price) AS Monetary,\n        COUNT(DISTINCT T1.order_id) AS Frequency,\n        MAX(T1.order_purchase_timestamp) AS Recency\n    FROM\n        orders AS T1\n    INNER JOIN\n        order_items AS T2\n        ON T1.order_id = T2.order_id\n    WHERE\n        T1.order_status = 'delivered'\n    GROUP BY\n        T1.customer_id\n),\nCTE_RFM_Segmentation AS (\n    -- Step 2: Define RFM Segmentation (Placeholder logic based on plan description)\n    SELECT\n        customer_id,\n        Monetary,\n        Frequency,\n        Recency,\n        -- Placeholder logic to assign RFM_Segment based on R, F, M\n        CASE\n            WHEN Recency > '2018-01-01' AND Frequency >= 5 AND Monetary >= 1000 THEN 'Champions'\n            WHEN Recency > '2018-01-01' AND Frequency < 3 THEN 'At Risk'\n            ELSE 'Other'\n        END AS RFM_Segment\n    FROM\n        CTE_Customer_Metrics\n)\n-- Step 3 & 4: Calculate Average Sales per Order per Segment and Final Output\nSELECT\n    RFM_Segment,\n    CAST(SUM(Monetary) AS REAL) / NULLIF(SUM(Frequency), 0) AS average_sales_per_order\nFROM\n    CTE_RFM_Segmentation\nGROUP BY\n    RFM_Segment\nORDER BY\n    RFM_Segment;",
+          "sql_after": "WITH CTE_Customer_Metrics AS (\n    -- Step 1: Calculate Core Customer Metrics (R, F, M)\n    SELECT\n        T1.customer_id,\n        SUM(T2.price) AS Monetary,\n        COUNT(DISTINCT T1.order_id) AS Frequency,\n        MAX(T1.order_purchase_timestamp) AS Recency\n    FROM\n        orders AS T1\n    INNER JOIN\n        order_items AS T2\n        ON T1.order_id = T2.order_id\n    WHERE\n        T1.order_status = 'delivered'\n    GROUP BY\n        T1.customer_id\n),\nCTE_RFM_Segmentation AS (\n    -- Step 2: Define RFM Segmentation (Placeholder logic based on plan description)\n    SELECT\n        customer_id,\n        Monetary,\n        Frequency,\n        Recency,\n        -- Placeholder logic to assign RFM_Segment based on R, F, M\n        CASE\n            WHEN Recency > '2018-01-01' AND Frequency >= 5 AND Monetary >= 1000 THEN 'Champions'\n            WHEN Recency > '2018-01-01' AND Frequency < 3 THEN 'At Risk'\n            ELSE 'Other'\n        END AS RFM_Segment\n    FROM\n        CTE_Customer_Metrics\n)\n-- Step 3 & 4: Calculate Average Sales per Order per Segment and Final Output\nSELECT\n    RFM_Segment,\n    CAST(SUM(Monetary) AS REAL) / NULLIF(SUM(Frequency), 0) AS average_sales_per_order\nFROM\n    CTE_RFM_Segmentation\nGROUP BY\n    RFM_Segment\nORDER BY\n    RFM_Segment;",
+          "result_row_count": 0,
+          "validator_api_error": null
+        }
+      ],
+      "system_plan": {
+        "intent": "Aggregation and Multi-Stage Grouping (RFM Analysis)",
+        "tables": [
+          "orders",
+          "order_items",
+          "customers"
+        ],
+        "joins": [
+          {
+            "left": "orders",
+            "right": "order_items",
+            "on": "orders.order_id = order_items.order_id"
+          }
+        ],
+        "filters": [
+          "orders.order_status = 'delivered'"
+        ],
+        "aggregations": [
+          "SUM(order_items.price)",
+          "COUNT(DISTINCT orders.order_id)",
+          "MAX(orders.order_purchase_timestamp)"
+        ],
+        "group_by": [
+          "customer_id",
+          "RFM_Segment"
+        ],
+        "order_by": [
+          "RFM_Segment"
+        ],
+        "limit": "",
+        "subqueries": [
+          "CTE_Customer_Metrics (Calculate R, F, M for each customer)",
+          "CTE_RFM_Segmentation (Assign segment based on R, F, M)",
+          "Final_Aggregation (Calculate average sales per segment)"
+        ],
+        "reasoning_steps": [
+          "Step 1: Calculate Core Customer Metrics (R, F, M). Join 'orders' and 'order_items' on 'order_id'. Filter the results to include only orders where 'order_status' is 'delivered'. Group the results by 'customer_id'. Calculate the Monetary value (M) as SUM(order_items.price), the Frequency (F) as COUNT(DISTINCT orders.order_id), and the Recency (R) as MAX(orders.order_purchase_timestamp). This forms the CTE_Customer_Metrics.",
+          "Step 2: Define RFM Segmentation. Using the metrics calculated in Step 1 (R, F, M), assign an RFM segment label. This requires defining specific criteria (e.g., using quartiles or predefined bins) for R, F, and M. For example, R might be segmented based on recency time difference, F based on order count quartiles, and M based on spending quartiles. This step creates a new column, 'RFM_Segment', in a CTE_RFM_Segmentation.",
+          "Step 3: Calculate Average Sales per Order per Segment. Group the results from CTE_RFM_Segmentation by the newly assigned 'RFM_Segment'. Calculate the total average sales per order for each segment. This is done by summing the total spend (M) for all customers within that segment and dividing by the total number of orders (F) for all customers within that segment (Total Spend / Total Orders).",
+          "Step 4: Final Output. Select the 'RFM_Segment' and the calculated average sales per order from the final aggregation step."
+        ]
+      },
+      "system_plan_raw": "```json\n{\n  \"intent\": \"Aggregation and Multi-Stage Grouping (RFM Analysis)\",\n  \"tables\": [\n    \"orders\",\n    \"order_items\",\n    \"customers\"\n  ],\n  \"joins\": [\n    {\n      \"left\": \"orders\",\n      \"right\": \"order_items\",\n      \"on\": \"orders.order_id = order_items.order_id\"\n    }\n  ],\n  \"filters\": [\n    \"orders.order_status = 'delivered'\"\n  ],\n  \"aggregations\": [\n    \"SUM(order_items.price)\",\n    \"COUNT(DISTINCT orders.order_id)\",\n    \"MAX(orders.order_purchase_timestamp)\"\n  ],\n  \"group_by\": [\n    \"customer_id\",\n    \"RFM_Segment\"\n  ],\n  \"order_by\": [\n    \"RFM_Segment\"\n  ],\n  \"limit\": null,\n  \"subqueries\": [\n    \"CTE_Customer_Metrics (Calculate R, F, M for each customer)\",\n    \"CTE_RFM_Segmentation (Assign segment based on R, F, M)\",\n    \"Final_Aggregation (Calculate average sales per segment)\"\n  ],\n  \"reasoning_steps\": [\n    \"Step 1: Calculate Core Customer Metrics (R, F, M). Join 'orders' and 'order_items' on 'order_id'. Filter the results to include only orders where 'order_status' is 'delivered'. Group the results by 'customer_id'. Calculate the Monetary value (M) as SUM(order_items.price), the Frequency (F) as COUNT(DISTINCT orders.order_id), and the Recency (R) as MAX(orders.order_purchase_timestamp). This forms the CTE_Customer_Metrics.\",\n    \"Step 2: Define RFM Segmentation. Using the metrics calculated in Step 1 (R, F, M), assign an RFM segment label. This requires defining specific criteria (e.g., using quartiles or predefined bins) for R, F, and M. For example, R might be segmented based on recency time difference, F based on order count quartiles, and M based on spending quartiles. This step creates a new column, 'RFM_Segment', in a CTE_RFM_Segmentation.\",\n    \"Step 3: Calculate Average Sales per Order per Segment. Group the results from CTE_RFM_Segmentation by the newly assigned 'RFM_Segment'. Calculate the total average sales per order for each segment. This is done by summing the total spend (M) for all customers within that segment and dividing by the total number of orders (F) for all customers within that segment (Total Spend / Total Orders).\",\n    \"Step 4: Final Output. Select the 'RFM_Segment' and the calculated average sales per order from the final aggregation step.\"\n  ]\n}\n```",
+      "system_plan_parse_error": "",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 1.0,
+      "system_plan_quality_reasons": [],
+      "system_planner_api_failures": 0,
+      "system_planner_retries_used": 0,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 0,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [
+        {
+          "attempts_used": 1,
+          "decision": "VALID",
+          "sql_before": "WITH CTE_Customer_Metrics AS (\n    -- Step 1: Calculate Core Customer Metrics (R, F, M)\n    SELECT\n        T1.customer_id,\n        SUM(T2.price) AS Monetary,\n        COUNT(DISTINCT T1.order_id) AS Frequency,\n        MAX(T1.order_purchase_timestamp) AS Recency\n    FROM\n        orders AS T1\n    INNER JOIN\n        order_items AS T2\n        ON T1.order_id = T2.order_id\n    WHERE\n        T1.order_status = 'delivered'\n    GROUP BY\n        T1.customer_id\n),\nCTE_RFM_Segmentation AS (\n    -- Step 2: Define RFM Segmentation (Placeholder logic based on plan description)\n    SELECT\n        customer_id,\n        Monetary,\n        Frequency,\n        Recency,\n        -- Placeholder logic to assign RFM_Segment based on R, F, M\n        CASE\n            WHEN Recency > '2018-01-01' AND Frequency >= 5 AND Monetary >= 1000 THEN 'Champions'\n            WHEN Recency > '2018-01-01' AND Frequency < 3 THEN 'At Risk'\n            ELSE 'Other'\n        END AS RFM_Segment\n    FROM\n        CTE_Customer_Metrics\n)\n-- Step 3 & 4: Calculate Average Sales per Order per Segment and Final Output\nSELECT\n    RFM_Segment,\n    CAST(SUM(Monetary) AS REAL) / NULLIF(SUM(Frequency), 0) AS average_sales_per_order\nFROM\n    CTE_RFM_Segmentation\nGROUP BY\n    RFM_Segment\nORDER BY\n    RFM_Segment;",
+          "validation_issues": [],
+          "sql_after": "WITH CTE_Customer_Metrics AS (\n    -- Step 1: Calculate Core Customer Metrics (R, F, M)\n    SELECT\n        T1.customer_id,\n        SUM(T2.price) AS Monetary,\n        COUNT(DISTINCT T1.order_id) AS Frequency,\n        MAX(T1.order_purchase_timestamp) AS Recency\n    FROM\n        orders AS T1\n    INNER JOIN\n        order_items AS T2\n        ON T1.order_id = T2.order_id\n    WHERE\n        T1.order_status = 'delivered'\n    GROUP BY\n        T1.customer_id\n),\nCTE_RFM_Segmentation AS (\n    -- Step 2: Define RFM Segmentation (Placeholder logic based on plan description)\n    SELECT\n        customer_id,\n        Monetary,\n        Frequency,\n        Recency,\n        -- Placeholder logic to assign RFM_Segment based on R, F, M\n        CASE\n            WHEN Recency > '2018-01-01' AND Frequency >= 5 AND Monetary >= 1000 THEN 'Champions'\n            WHEN Recency > '2018-01-01' AND Frequency < 3 THEN 'At Risk'\n            ELSE 'Other'\n        END AS RFM_Segment\n    FROM\n        CTE_Customer_Metrics\n)\n-- Step 3 & 4: Calculate Average Sales per Order per Segment and Final Output\nSELECT\n    RFM_Segment,\n    CAST(SUM(Monetary) AS REAL) / NULLIF(SUM(Frequency), 0) AS average_sales_per_order\nFROM\n    CTE_RFM_Segmentation\nGROUP BY\n    RFM_Segment\nORDER BY\n    RFM_Segment;"
+        }
+      ],
+      "system_plan_validation_attempts_used": 1,
+      "baseline_runtime_sec": 3385.273,
+      "system_runtime_sec": 376.428,
+      "query_runtime_sec": 3761.716,
+      "attempts_used": 1,
+      "winner": "tie",
+      "baseline_error": null,
+      "system_error": null,
+      "is_complex": true,
+      "complexity_score": 15,
+      "complexity_reasons": [
+        "joins:6",
+        "nested-select",
+        "group-by",
+        "aggregation",
+        "ambiguous-nl"
+      ],
+      "notes": "Both produced similar outcome."
+    }
+  ],
+  "metrics": {
+    "total_queries": 2,
+    "complex_queries": 2,
+    "total_runtime_sec": 4937.072,
+    "avg_query_runtime_sec": 2468.536,
+    "baseline_accuracy": 0.5,
+    "system_accuracy": 0.5,
+    "final_accuracy": 0.5,
+    "improvement": 0.0,
+    "improvement_percent": 0.0,
+    "baseline_execution_success_rate": 1.0,
+    "system_execution_success_rate": 1.0,
+    "baseline_incorrect_sql": 0,
+    "system_incorrect_sql": 0,
+    "baseline_wrong_results": 1,
+    "system_wrong_results": 1,
+    "baseline_complex_query_accuracy": 0.5,
+    "system_complex_query_accuracy": 0.5,
+    "complex_query_accuracy": {
+      "baseline": 0.5,
+      "system": 0.5
+    },
+    "baseline_api_failures": 0,
+    "system_api_failures": 0,
+    "api_failures": 0,
+    "retry_success_rate": 1.0,
+    "semantic_corrections_used": 0,
+    "semantic_success_rate": 0.0,
+    "plan_quality": {
+      "avg_score": 1.0,
+      "high_rate": 1.0,
+      "count": 2
+    },
+    "plan_quality_avg": 1.0,
+    "plan_validation_failures": 0,
+    "plan_correction_success_rate": 0.0,
+    "logical_error_reduction": 0.0
+  }
+}

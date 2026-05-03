@@ -1,0 +1,26 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Local env
+.env
+.venv/
+venv/
+
+# Large local datasets not needed for progress snapshot
+data/spider2_repo/
+
+# Local runtime logs
+logs/
+evaluation/runtime_logs/
+
+# Temp artifacts
+evaluation/.tmp/
+archive/
+data/uploads/
+
+# IDE/system
+.DS_Store
+Thumbs.db
+Screenshot*.png

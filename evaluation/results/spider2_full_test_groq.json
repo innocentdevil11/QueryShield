@@ -1,0 +1,1180 @@
+{
+  "experiment": "spider2_subset_fair_prompt",
+  "status": "completed",
+  "dataset_json": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2\\spider2_local_subset.json",
+  "db_root": "C:\\Users\\Asus\\TextToSQL\\queryshield\\data\\spider2",
+  "subset": {
+    "selected_db_ids": [
+      "IPL",
+      "E_commerce",
+      "sqlite-sakila"
+    ],
+    "selected_count": 6,
+    "requested_num_dbs": 3,
+    "requested_num_queries": 24
+  },
+  "runtime_config": {
+    "llm_timeout_seconds": 35,
+    "max_correction_retries": 2,
+    "max_semantic_retries": 2,
+    "max_plan_validation_attempts": 3,
+    "use_semantic_loop": true,
+    "system_plan_based": true,
+    "api_max_retries": 1,
+    "api_recovery_rounds": 1,
+    "api_recovery_cooldown_seconds": 5,
+    "throttle_seconds": 15.0,
+    "api_budget_per_query": 10,
+    "pipeline_mode": "full",
+    "run_parallel": false
+  },
+  "results": [
+    {
+      "db_id": "IPL",
+      "example_id": "local022",
+      "question": "Retrieve the names of players who scored no less than 100 runs in a match while playing for the team that lost that match.",
+      "gold_sql": "-- Step 1: Calculate players' total runs in each match\nWITH player_runs AS (\n    SELECT \n        bbb.striker AS player_id, \n        bbb.match_id, \n        SUM(bsc.runs_scored) AS total_runs \n    FROM \n        ball_by_ball AS bbb\n    JOIN \n        batsman_scored AS bsc\n    ON \n        bbb.match_id = bsc.match_id \n        AND bbb.over_id = bsc.over_id \n        AND bbb.ball_id = bsc.ball_id \n        AND bbb.innings_no = bsc.innings_no\n    GROUP BY \n        bbb.striker, bbb.match_id\n    HAVING \n        SUM(bsc.runs_scored) >= 100\n),\n\n-- Step 2: Identify losing teams for each match\nlosing_teams AS (\n    SELECT \n        match_id, \n        CASE \n            WHEN match_winner = team_1 THEN team_2 \n            ELSE team_1 \n        END AS loser \n    FROM \n        match\n),\n\n-- Step 3: Combine the above results to get players who scored 100 or more runs in losing teams\nplayers_in_losing_teams AS (\n    SELECT \n        pr.player_id, \n        pr.match_id \n    FROM \n        player_runs AS pr\n    JOIN \n        losing_teams AS lt\n    ON \n        pr.match_id = lt.match_id\n    JOIN \n        player_match AS pm\n    ON \n        pr.player_id = pm.player_id \n        AND pr.match_id = pm.match_id \n        AND lt.loser = pm.team_id\n)\n\n-- Step 4: Select distinct player names from the player table\nSELECT DISTINCT \n    p.player_name \nFROM \n    player AS p\nJOIN \n    players_in_losing_teams AS plt\nON \n    p.player_id = plt.player_id\nORDER BY \n    p.player_name;",
+      "baseline_sql": "SELECT DISTINCT T4.player_name\nFROM match AS T1\nJOIN player_match AS T2 ON T1.match_id = T2.match_id\nJOIN player AS T4 ON T2.player_id = T4.player_id\nWHERE T1.match_winner != T2.team_id\nAND T2.match_id IN (\n    SELECT T5.match_id\n    FROM (\n        SELECT T6.match_id, T6.player_id, SUM(T7.runs_scored) AS total_runs\n        FROM player_match AS T6\n        JOIN ball_by_ball AS T8 ON T6.match_id = T8.match_id\n        JOIN batsman_scored AS T7 ON T8.match_id = T7.match_id AND T8.over_id = T7.over_id AND T8.ball_id = T7.ball_id\n        WHERE T6.player_id = T8.striker\n        GROUP BY T6.match_id, T6.player_id\n    ) AS T5\n    WHERE T5.total_runs >= 100\n);",
+      "system_sql": "SELECT DISTINCT p.player_name\nFROM player_match pm\nJOIN player p ON pm.player_id = p.player_id\nJOIN match m ON pm.match_id = m.match_id\nWHERE m.match_winner != pm.team_id\nAND (SELECT SUM(runs_scored) \n     FROM batsman_scored bs\n     JOIN ball_by_ball bbb ON bs.match_id = bbb.match_id AND bs.over_id = bbb.over_id AND bs.ball_id = bbb.ball_id\n     WHERE bs.match_id = pm.match_id AND bs.innings_no = bbb.innings_no \n     AND (bbb.striker = pm.player_id OR bbb.non_striker = pm.player_id)) >= 100;",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": true,
+      "system_execution_success": true,
+      "baseline_classification": "wrong_results",
+      "system_classification": "wrong_results",
+      "baseline_failure_type": "wrong_results",
+      "system_failure_type": "wrong_results",
+      "baseline_api_failures": 0,
+      "system_api_failures": 0,
+      "baseline_retries_used": 0,
+      "system_retries_used": 0,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 2,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "INVALID",
+      "system_semantic_validation_reason": "The subquery in the WHERE clause is missing a condition to filter the innings for the team that the player belongs to, which is necessary to accurately calculate the runs scored by the player in the match.",
+      "system_semantic_trace": [
+        {
+          "step": "initial_validation",
+          "decision": "INVALID",
+          "reason": "The query does not account for the striker or non-striker in the ball_by_ball table, which are the actual players batting, it only considers the team batting.",
+          "sql_before": "SELECT player.player_name, match.match_id, player_match.team_id, SUM(batsman_scored.runs_scored) \nFROM batsman_scored \nJOIN ball_by_ball ON batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id \nJOIN match ON ball_by_ball.match_id = match.match_id \nJOIN player_match ON ball_by_ball.match_id = player_match.match_id AND ball_by_ball.team_batting = player_match.team_id \nJOIN player ON player_match.player_id = player.player_id \nWHERE match.match_winner != player_match.team_id \nGROUP BY player.player_name, match.match_id, player_match.team_id \nHAVING SUM(batsman_scored.runs_scored) >= 100;",
+          "sql_after": "SELECT player.player_name, match.match_id, player_match.team_id, SUM(batsman_scored.runs_scored) \nFROM batsman_scored \nJOIN ball_by_ball ON batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id \nJOIN match ON ball_by_ball.match_id = match.match_id \nJOIN player_match ON ball_by_ball.match_id = player_match.match_id AND ball_by_ball.team_batting = player_match.team_id \nJOIN player ON player_match.player_id = player.player_id \nWHERE match.match_winner != player_match.team_id \nGROUP BY player.player_name, match.match_id, player_match.team_id \nHAVING SUM(batsman_scored.runs_scored) >= 100;",
+          "result_row_count": 0,
+          "validator_api_error": null
+        },
+        {
+          "step": "semantic_correction",
+          "attempt": 1,
+          "decision": "INVALID",
+          "reason": "The subquery in the WHERE clause is summing runs for the striker or non-striker, but it should be summing runs for the specific player, not the batting position.",
+          "sql_before": "SELECT player.player_name, match.match_id, player_match.team_id, SUM(batsman_scored.runs_scored) \nFROM batsman_scored \nJOIN ball_by_ball ON batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id \nJOIN match ON ball_by_ball.match_id = match.match_id \nJOIN player_match ON ball_by_ball.match_id = player_match.match_id AND ball_by_ball.team_batting = player_match.team_id \nJOIN player ON player_match.player_id = player.player_id \nWHERE match.match_winner != player_match.team_id \nGROUP BY player.player_name, match.match_id, player_match.team_id \nHAVING SUM(batsman_scored.runs_scored) >= 100;",
+          "sql_after": "SELECT DISTINCT p.player_name\nFROM batsman_scored bs\nJOIN ball_by_ball bbb ON bs.match_id = bbb.match_id AND bs.over_id = bbb.over_id AND bs.ball_id = bbb.ball_id\nJOIN player_match pm_striker ON bbb.match_id = pm_striker.match_id AND bbb.striker = pm_striker.player_id\nJOIN player p ON pm_striker.player_id = p.player_id\nJOIN match m ON bbb.match_id = m.match_id\nWHERE m.match_winner != pm_striker.team_id\nAND (bbb.striker = pm_striker.player_id OR bbb.non_striker = pm_striker.player_id)\nAND (SELECT SUM(runs_scored) \n     FROM batsman_scored \n     WHERE match_id = bbb.match_id AND innings_no = bbb.innings_no \n     AND (striker = bbb.striker OR non_striker = bbb.striker)) >= 100\nUNION\nSELECT DISTINCT p.player_name\nFROM batsman_scored bs\nJOIN ball_by_ball bbb ON bs.match_id = bbb.match_id AND bs.over_id = bbb.over_id AND bs.ball_id = bbb.ball_id\nJOIN player_match pm_non_striker ON bbb.match_id = pm_non_striker.match_id AND bbb.non_striker = pm_non_striker.player_id\nJOIN player p ON pm_non_striker.player_id = p.player_id\nJOIN match m ON bbb.match_id = m.match_id\nWHERE m.match_winner != pm_non_striker.team_id\nAND (bbb.striker = pm_non_striker.player_id OR bbb.non_striker = pm_non_striker.player_id)\nAND (SELECT SUM(runs_scored) \n     FROM batsman_scored \n     WHERE match_id = bbb.match_id AND innings_no = bbb.innings_no \n     AND (striker = bbb.non_striker OR non_striker = bbb.non_striker)) >= 100;",
+          "result_row_count": 0,
+          "validator_api_error": null
+        },
+        {
+          "step": "semantic_correction",
+          "attempt": 2,
+          "decision": "INVALID",
+          "reason": "The subquery in the WHERE clause is missing a condition to filter the innings for the team that the player belongs to, which is necessary to accurately calculate the runs scored by the player in the match.",
+          "sql_before": "SELECT DISTINCT p.player_name\nFROM batsman_scored bs\nJOIN ball_by_ball bbb ON bs.match_id = bbb.match_id AND bs.over_id = bbb.over_id AND bs.ball_id = bbb.ball_id\nJOIN player_match pm_striker ON bbb.match_id = pm_striker.match_id AND bbb.striker = pm_striker.player_id\nJOIN player p ON pm_striker.player_id = p.player_id\nJOIN match m ON bbb.match_id = m.match_id\nWHERE m.match_winner != pm_striker.team_id\nAND (bbb.striker = pm_striker.player_id OR bbb.non_striker = pm_striker.player_id)\nAND (SELECT SUM(runs_scored) \n     FROM batsman_scored \n     WHERE match_id = bbb.match_id AND innings_no = bbb.innings_no \n     AND (striker = bbb.striker OR non_striker = bbb.striker)) >= 100\nUNION\nSELECT DISTINCT p.player_name\nFROM batsman_scored bs\nJOIN ball_by_ball bbb ON bs.match_id = bbb.match_id AND bs.over_id = bbb.over_id AND bs.ball_id = bbb.ball_id\nJOIN player_match pm_non_striker ON bbb.match_id = pm_non_striker.match_id AND bbb.non_striker = pm_non_striker.player_id\nJOIN player p ON pm_non_striker.player_id = p.player_id\nJOIN match m ON bbb.match_id = m.match_id\nWHERE m.match_winner != pm_non_striker.team_id\nAND (bbb.striker = pm_non_striker.player_id OR bbb.non_striker = pm_non_striker.player_id)\nAND (SELECT SUM(runs_scored) \n     FROM batsman_scored \n     WHERE match_id = bbb.match_id AND innings_no = bbb.innings_no \n     AND (striker = bbb.non_striker OR non_striker = bbb.non_striker)) >= 100;",
+          "sql_after": "SELECT DISTINCT p.player_name\nFROM player_match pm\nJOIN player p ON pm.player_id = p.player_id\nJOIN match m ON pm.match_id = m.match_id\nWHERE m.match_winner != pm.team_id\nAND (SELECT SUM(runs_scored) \n     FROM batsman_scored bs\n     JOIN ball_by_ball bbb ON bs.match_id = bbb.match_id AND bs.over_id = bbb.over_id AND bs.ball_id = bbb.ball_id\n     WHERE bs.match_id = pm.match_id AND bs.innings_no = bbb.innings_no \n     AND (bbb.striker = pm.player_id OR bbb.non_striker = pm.player_id)) >= 100;",
+          "result_row_count": 0,
+          "validator_api_error": null
+        }
+      ],
+      "system_plan": {
+        "intent": "filter+aggregate+join",
+        "tables": [
+          "batsman_scored",
+          "ball_by_ball",
+          "match",
+          "player_match",
+          "player"
+        ],
+        "joins": [
+          {
+            "left": "batsman_scored",
+            "right": "ball_by_ball",
+            "on": "batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id"
+          },
+          {
+            "left": "ball_by_ball",
+            "right": "match",
+            "on": "ball_by_ball.match_id = match.match_id"
+          },
+          {
+            "left": "ball_by_ball",
+            "right": "player_match",
+            "on": "ball_by_ball.match_id = player_match.match_id AND ball_by_ball.team_batting = player_match.team_id"
+          },
+          {
+            "left": "player_match",
+            "right": "player",
+            "on": "player_match.player_id = player.player_id"
+          }
+        ],
+        "filters": [
+          "match.match_winner != player_match.team_id",
+          "SUM(batsman_scored.runs_scored) >= 100"
+        ],
+        "aggregations": [
+          "SUM(batsman_scored.runs_scored)"
+        ],
+        "group_by": [
+          "player.player_name",
+          "match.match_id",
+          "player_match.team_id"
+        ],
+        "order_by": [],
+        "limit": "",
+        "subqueries": [],
+        "reasoning_steps": [
+          "Join batsman_scored to ball_by_ball to get match and innings information",
+          "Join ball_by_ball to match to get match outcome information",
+          "Join ball_by_ball to player_match to get player and team information",
+          "Join player_match to player to get player names",
+          "Filter matches where the team batting did not win the match",
+          "Aggregate runs scored by each player in each match",
+          "Filter players who scored 100 or more runs in a match"
+        ]
+      },
+      "system_plan_raw": "{\n\"intent\": \"filter+aggregate+join\",\n\"tables\": [\"batsman_scored\", \"ball_by_ball\", \"match\", \"player_match\", \"player\"],\n\"joins\": [\n{\"left\": \"batsman_scored\", \"right\": \"ball_by_ball\", \"on\": \"batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id\"},\n{\"left\": \"ball_by_ball\", \"right\": \"match\", \"on\": \"ball_by_ball.match_id = match.match_id\"},\n{\"left\": \"ball_by_ball\", \"right\": \"player_match\", \"on\": \"ball_by_ball.match_id = player_match.match_id AND ball_by_ball.team_batting = player_match.team_id\"},\n{\"left\": \"player_match\", \"right\": \"player\", \"on\": \"player_match.player_id = player.player_id\"}\n],\n\"filters\": [\"match.match_winner != player_match.team_id\", \"SUM(batsman_scored.runs_scored) >= 100\"],\n\"aggregations\": [\"SUM(batsman_scored.runs_scored)\"],\n\"group_by\": [\"player.player_name\", \"match.match_id\", \"player_match.team_id\"],\n\"order_by\": [],\n\"limit\": \"\",\n\"subqueries\": [],\n\"reasoning_steps\": [\n\"Join batsman_scored to ball_by_ball to get match and innings information\",\n\"Join ball_by_ball to match to get match outcome information\",\n\"Join ball_by_ball to player_match to get player and team information\",\n\"Join player_match to player to get player names\",\n\"Filter matches where the team batting did not win the match\",\n\"Aggregate runs scored by each player in each match\",\n\"Filter players who scored 100 or more runs in a match\"\n]\n}",
+      "system_plan_parse_error": "",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 1.0,
+      "system_plan_quality_reasons": [],
+      "system_planner_api_failures": 0,
+      "system_planner_retries_used": 0,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 0,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [
+        {
+          "attempts_used": 1,
+          "decision": "VALID",
+          "confidence": 1.0,
+          "sql_before": "SELECT player.player_name, match.match_id, player_match.team_id, SUM(batsman_scored.runs_scored) \nFROM batsman_scored \nJOIN ball_by_ball ON batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id \nJOIN match ON ball_by_ball.match_id = match.match_id \nJOIN player_match ON ball_by_ball.match_id = player_match.match_id AND ball_by_ball.team_batting = player_match.team_id \nJOIN player ON player_match.player_id = player.player_id \nWHERE match.match_winner != player_match.team_id \nGROUP BY player.player_name, match.match_id, player_match.team_id \nHAVING SUM(batsman_scored.runs_scored) >= 100;",
+          "validation_issues": [],
+          "sql_after": "SELECT player.player_name, match.match_id, player_match.team_id, SUM(batsman_scored.runs_scored) \nFROM batsman_scored \nJOIN ball_by_ball ON batsman_scored.match_id = ball_by_ball.match_id AND batsman_scored.over_id = ball_by_ball.over_id AND batsman_scored.ball_id = ball_by_ball.ball_id \nJOIN match ON ball_by_ball.match_id = match.match_id \nJOIN player_match ON ball_by_ball.match_id = player_match.match_id AND ball_by_ball.team_batting = player_match.team_id \nJOIN player ON player_match.player_id = player.player_id \nWHERE match.match_winner != player_match.team_id \nGROUP BY player.player_name, match.match_id, player_match.team_id \nHAVING SUM(batsman_scored.runs_scored) >= 100;",
+          "note": "valid"
+        }
+      ],
+      "system_plan_validation_attempts_used": 1,
+      "baseline_runtime_sec": 1.534,
+      "system_runtime_sec": 120.139,
+      "query_runtime_sec": 121.677,
+      "attempts_used": 1,
+      "winner": "tie",
+      "baseline_error": null,
+      "system_error": null,
+      "is_complex": true,
+      "complexity_score": 13,
+      "complexity_reasons": [
+        "joins:3",
+        "nested-select",
+        "group-by",
+        "having",
+        "aggregation"
+      ],
+      "notes": "Both produced similar outcome.",
+      "budget_exhausted_stages": [],
+      "budget_log": [
+        "planner:1",
+        "sql_generation:1",
+        "plan_validation:1",
+        "semantic_loop:1"
+      ],
+      "plan_validator_confidence": 1.0,
+      "invalidation_severity_breakdown": {},
+      "deterministic_fixes_applied": [],
+      "llm_corrections_saved": 0,
+      "parallel_winner": "n/a",
+      "schema_pre_validation_result": {
+        "valid": true,
+        "errors": [],
+        "warnings": []
+      },
+      "pipeline_mode": "full"
+    },
+    {
+      "db_id": "E_commerce",
+      "example_id": "local003",
+      "question": "According to the RFM definition document, calculate the average sales per order for each customer within distinct RFM segments, considering only 'delivered' orders. Use the customer unique identifier. Clearly define how to calculate Recency based on the latest purchase timestamp and specify the criteria for classifying RFM segments. The average sales should be computed as the total spend divided by the total number of orders. Please analyze and report the differences in average sales across the RFM segments",
+      "gold_sql": "WITH RecencyScore AS (\n    SELECT customer_unique_id,\n           MAX(order_purchase_timestamp) AS last_purchase,\n           NTILE(5) OVER (ORDER BY MAX(order_purchase_timestamp) DESC) AS recency\n    FROM orders\n        JOIN customers USING (customer_id)\n    WHERE order_status = 'delivered'\n    GROUP BY customer_unique_id\n),\nFrequencyScore AS (\n    SELECT customer_unique_id,\n           COUNT(order_id) AS total_orders,\n           NTILE(5) OVER (ORDER BY COUNT(order_id) DESC) AS frequency\n    FROM orders\n        JOIN customers USING (customer_id)\n    WHERE order_status = 'delivered'\n    GROUP BY customer_unique_id\n),\nMonetaryScore AS (\n    SELECT customer_unique_id,\n           SUM(price) AS total_spent,\n           NTILE(5) OVER (ORDER BY SUM(price) DESC) AS monetary\n    FROM orders\n        JOIN order_items USING (order_id)\n        JOIN customers USING (customer_id)\n    WHERE order_status = 'delivered'\n    GROUP BY customer_unique_id\n),\n\n-- 2. Assign each customer to a group\nRFM AS (\n    SELECT last_purchase, total_orders, total_spent,\n        CASE\n            WHEN recency = 1 AND frequency + monetary IN (1, 2, 3, 4) THEN \"Champions\"\n            WHEN recency IN (4, 5) AND frequency + monetary IN (1, 2) THEN \"Can't Lose Them\"\n            WHEN recency IN (4, 5) AND frequency + monetary IN (3, 4, 5, 6) THEN \"Hibernating\"\n            WHEN recency IN (4, 5) AND frequency + monetary IN (7, 8, 9, 10) THEN \"Lost\"\n            WHEN recency IN (2, 3) AND frequency + monetary IN (1, 2, 3, 4) THEN \"Loyal Customers\"\n            WHEN recency = 3 AND frequency + monetary IN (5, 6) THEN \"Needs Attention\"\n            WHEN recency = 1 AND frequency + monetary IN (7, 8) THEN \"Recent Users\"\n            WHEN recency = 1 AND frequency + monetary IN (5, 6) OR\n                recency = 2 AND frequency + monetary IN (5, 6, 7, 8) THEN \"Potentital Loyalists\"\n            WHEN recency = 1 AND frequency + monetary IN (9, 10) THEN \"Price Sensitive\"\n            WHEN recency = 2 AND frequency + monetary IN (9, 10) THEN \"Promising\"\n            WHEN recency = 3 AND frequency + monetary IN (7, 8, 9, 10) THEN \"About to Sleep\"\n        END AS RFM_Bucket\n    FROM RecencyScore\n        JOIN FrequencyScore USING (customer_unique_id)\n        JOIN MonetaryScore USING (customer_unique_id)\n)\n\nSELECT RFM_Bucket, \n       AVG(total_spent / total_orders) AS avg_sales_per_customer\nFROM RFM\nGROUP BY RFM_Bucket",
+      "baseline_sql": "WITH \n-- Calculate total spend and total number of orders for each customer\ncustomer_spend AS (\n  SELECT \n    o.customer_id,\n    SUM(oi.price + oi.freight_value) AS total_spend,\n    COUNT(DISTINCT o.order_id) AS total_orders\n  FROM \n    orders o\n  JOIN \n    order_items oi ON o.order_id = oi.order_id\n  WHERE \n    o.order_status = 'delivered'\n  GROUP BY \n    o.customer_id\n),\n\n-- Calculate recency for each customer based on the latest purchase timestamp\ncustomer_recency AS (\n  SELECT \n    o.customer_id,\n    MAX(o.order_purchase_timestamp) AS latest_purchase\n  FROM \n    orders o\n  WHERE \n    o.order_status = 'delivered'\n  GROUP BY \n    o.customer_id\n),\n\n-- Calculate frequency for each customer\ncustomer_frequency AS (\n  SELECT \n    o.customer_id,\n    COUNT(DISTINCT o.order_id) AS frequency\n  FROM \n    orders o\n  WHERE \n    o.order_status = 'delivered'\n  GROUP BY \n    o.customer_id\n),\n\n-- Calculate RFM score for each customer\nrfm_score AS (\n  SELECT \n    cs.customer_id,\n    cs.total_spend,\n    cs.total_orders,\n    cr.latest_purchase,\n    cf.frequency,\n    -- Calculate recency score (higher is better)\n    CASE \n      WHEN cr.latest_purchase >= (SELECT MAX(order_purchase_timestamp) FROM orders WHERE order_status = 'delivered') - 30 THEN 5\n      WHEN cr.latest_purchase >= (SELECT MAX(order_purchase_timestamp) FROM orders WHERE order_status = 'delivered') - 60 THEN 4\n      WHEN cr.latest_purchase >= (SELECT MAX(order_purchase_timestamp) FROM orders WHERE order_status = 'delivered') - 90 THEN 3\n      WHEN cr.latest_purchase >= (SELECT MAX(order_purchase_timestamp) FROM orders WHERE order_status = 'delivered') - 120 THEN 2\n      ELSE 1\n    END AS recency_score,\n    -- Calculate frequency score (higher is better)\n    CASE \n      WHEN cf.frequency >= 5 THEN 5\n      WHEN cf.frequency >= 3 THEN 4\n      WHEN cf.frequency >= 2 THEN 3\n      WHEN cf.frequency >= 1 THEN 2\n      ELSE 1\n    END AS frequency_score,\n    -- Calculate monetary score (higher is better)\n    CASE \n      WHEN cs.total_spend >= 1000 THEN 5\n      WHEN cs.total_spend >= 500 THEN 4\n      WHEN cs.total_spend >= 200 THEN 3\n      WHEN cs.total_spend >= 100 THEN 2\n      ELSE 1\n    END AS monetary_score\n  FROM \n    customer_spend cs\n  JOIN \n    customer_recency cr ON cs.customer_id = cr.customer_id\n  JOIN \n    customer_frequency cf ON cs.customer_id = cf.customer_id\n),\n\n-- Calculate RFM segment for each customer\nrfm_segment AS (\n  SELECT \n    rs.customer_id,\n    rs.total_spend,\n    rs.total_orders,\n    rs.recency_score,\n    rs.frequency_score,\n    rs.monetary_score,\n    -- Calculate RFM segment\n    CASE \n      WHEN rs.recency_score >= 4 AND rs.frequency_score >= 4 AND rs.monetary_score >= 4 THEN '111'\n      WHEN rs.recency_score >= 4 AND rs.frequency_score >= 4 AND rs.monetary_score < 4 THEN '110'\n      WHEN rs.recency_score >= 4 AND rs.frequency_score < 4 AND rs.monetary_score >= 4 THEN '101'\n      WHEN rs.recency_score >= 4 AND rs.frequency_score < 4 AND rs.monetary_score < 4 THEN '100'\n      WHEN rs.recency_score < 4 AND rs.frequency_score >= 4 AND rs.monetary_score >= 4 THEN '011'\n      WHEN rs.recency_score < 4 AND rs.frequency_score >= 4 AND rs.monetary_score < 4 THEN '010'\n      WHEN rs.recency_score < 4 AND rs.frequency_score < 4 AND rs.monetary_score >= 4 THEN '001'\n      ELSE '000'\n    END AS rfm_segment\n  FROM \n    rfm_score rs\n)\n\n-- Calculate average sales per order for each RFM segment\nSELECT \n  rs.rfm_segment,\n  AVG(rs.total_spend / rs.total_orders) AS average_sales\nFROM \n  rfm_segment rs\nGROUP BY \n  rs.rfm_segment\nORDER BY \n  rs.rfm_segment;",
+      "system_sql": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      rs.Recency,\n      rs.Frequency,\n      rs.Monetary,\n      rs.Recency || '-' || rs.Frequency || '-' || rs.Monetary AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;",
+      "baseline_correct": true,
+      "system_correct": true,
+      "baseline_execution_success": true,
+      "system_execution_success": true,
+      "baseline_classification": "success",
+      "system_classification": "success",
+      "baseline_failure_type": "success",
+      "system_failure_type": "success",
+      "baseline_api_failures": 0,
+      "system_api_failures": 0,
+      "baseline_retries_used": 0,
+      "system_retries_used": 0,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "NOT_RUN",
+      "system_semantic_validation_reason": "skipped",
+      "system_semantic_trace": [],
+      "system_plan": {
+        "intent": "filter+aggregate+comparison",
+        "tables": [
+          "orders",
+          "order_items",
+          "order_payments",
+          "customers"
+        ],
+        "joins": [
+          {
+            "left": "orders",
+            "right": "customers",
+            "on": "orders.customer_id=customers.customer_id"
+          },
+          {
+            "left": "orders",
+            "right": "order_items",
+            "on": "orders.order_id=order_items.order_id"
+          },
+          {
+            "left": "orders",
+            "right": "order_payments",
+            "on": "orders.order_id=order_payments.order_id"
+          }
+        ],
+        "filters": [
+          "orders.order_status='delivered'"
+        ],
+        "aggregations": [
+          "AVG(order_payments.payment_value)"
+        ],
+        "group_by": [
+          "customers.customer_unique_id",
+          "RFM_segment"
+        ],
+        "order_by": [],
+        "limit": "",
+        "subqueries": [
+          "SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase FROM orders WHERE order_status='delivered' GROUP BY customer_id",
+          "SELECT customer_id, COUNT(order_id) AS total_orders, SUM(payment_value) AS total_spend FROM orders JOIN order_payments ON orders.order_id=order_payments.order_id WHERE orders.order_status='delivered' GROUP BY customer_id"
+        ],
+        "reasoning_steps": [
+          "Filter orders by 'delivered' status",
+          "Calculate total spend per customer",
+          "Calculate total number of orders per customer",
+          "Calculate average sales per customer",
+          "Define RFM segments based on Recency, Frequency, and Monetary criteria",
+          "Assign customers to RFM segments",
+          "Calculate average sales per RFM segment",
+          "Compare average sales across RFM segments"
+        ]
+      },
+      "system_plan_raw": "{\n\"intent\": \"filter+aggregate+comparison\",\n\"tables\": [\"orders\", \"order_items\", \"order_payments\", \"customers\"],\n\"joins\": [\n{\"left\": \"orders\", \"right\": \"customers\", \"on\": \"orders.customer_id=customers.customer_id\"},\n{\"left\": \"orders\", \"right\": \"order_items\", \"on\": \"orders.order_id=order_items.order_id\"},\n{\"left\": \"orders\", \"right\": \"order_payments\", \"on\": \"orders.order_id=order_payments.order_id\"}\n],\n\"filters\": [\"orders.order_status='delivered'\"],\n\"aggregations\": [\"AVG(order_payments.payment_value)\"],\n\"group_by\": [\"customers.customer_unique_id\", \"RFM_segment\"],\n\"order_by\": [],\n\"limit\": \"\",\n\"subqueries\": [\n\"SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase FROM orders WHERE order_status='delivered' GROUP BY customer_id\",\n\"SELECT customer_id, COUNT(order_id) AS total_orders, SUM(payment_value) AS total_spend FROM orders JOIN order_payments ON orders.order_id=order_payments.order_id WHERE orders.order_status='delivered' GROUP BY customer_id\"\n],\n\"reasoning_steps\": [\n\"Filter orders by 'delivered' status\",\n\"Calculate total spend per customer\",\n\"Calculate total number of orders per customer\",\n\"Calculate average sales per customer\",\n\"Define RFM segments based on Recency, Frequency, and Monetary criteria\",\n\"Assign customers to RFM segments\",\n\"Calculate average sales per RFM segment\",\n\"Compare average sales across RFM segments\"\n]\n}",
+      "system_plan_parse_error": "",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 1.0,
+      "system_plan_quality_reasons": [],
+      "system_planner_api_failures": 0,
+      "system_planner_retries_used": 0,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 6,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [
+        {
+          "attempts_used": 1,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "SELECT customers.customer_unique_id, AVG(order_payments.payment_value) AS avg_payment_value\nFROM orders\nJOIN customers ON orders.customer_id = customers.customer_id\nJOIN order_items ON orders.order_id = order_items.order_id\nJOIN order_payments ON orders.order_id = order_payments.order_id\nWHERE orders.order_status = 'delivered'\nGROUP BY customers.customer_unique_id, RFM_segment;",
+          "validation_issues": [
+            {
+              "description": "Missing table 'RFM_segment' is not present in the plan's tables but is used in the GROUP BY clause",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The subqueries in the plan are not implemented in the SQL query",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not calculate total spend per customer, total number of orders per customer, or define RFM segments as specified in the plan's reasoning steps",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not assign customers to RFM segments as specified in the plan",
+              "severity": "CRITICAL"
+            }
+          ],
+          "sql_after": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      CONCAT(rs.Recency, '-', rs.Frequency, '-', rs.Monetary) AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_items oi ON o.order_id = oi.order_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;"
+        },
+        {
+          "attempts_used": 2,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      CONCAT(rs.Recency, '-', rs.Frequency, '-', rs.Monetary) AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_items oi ON o.order_id = oi.order_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;",
+          "validation_issues": [
+            {
+              "description": "Missing join condition for order_items table in the plan",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Extra join with order_items table in the SQL query",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query does not exactly match the plan's group_by clause",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not implement the plan's subqueries as specified",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query does not implement the plan's reasoning steps as specified",
+              "severity": "WARNING"
+            }
+          ],
+          "sql_after": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      CONCAT(rs.Recency, '-', rs.Frequency, '-', rs.Monetary) AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;"
+        },
+        {
+          "attempts_used": 3,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      CONCAT(rs.Recency, '-', rs.Frequency, '-', rs.Monetary) AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;",
+          "validation_issues": [
+            {
+              "description": "Missing join with order_items table",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not fully implement the plan as it does not calculate the average sales per RFM segment and compare average sales across RFM segments",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not calculate the total number of orders per customer and total spend per customer as separate aggregations",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query uses CONCAT to create the RFM segment string, which may not be the most efficient approach",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query does not include the subqueries as specified in the plan",
+              "severity": "WARNING"
+            }
+          ],
+          "sql_after": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      CONCAT(rs.Recency, '-', rs.Frequency, '-', rs.Monetary) AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;"
+        },
+        {
+          "attempts_used": 1,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      rs.Recency,\n      rs.Frequency,\n      rs.Monetary,\n      rs.Recency || '-' || rs.Frequency || '-' || rs.Monetary AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_items oi ON o.order_id = oi.order_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment\nORDER BY avg_payment_value;",
+          "validation_issues": [
+            {
+              "description": "Extra table 'order_items' used in the SQL query, which is not required by the plan",
+              "severity": "WARNING"
+            },
+            {
+              "description": "Missing aggregation 'AVG(order_payments.payment_value)' in the subqueries, but present in the final query",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query does not fully implement the plan, as it does not calculate 'total spend per customer' and 'average sales per customer' as separate steps",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not calculate 'average sales per RFM segment' as required by the plan",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not compare 'average sales across RFM segments' as required by the plan",
+              "severity": "CRITICAL"
+            }
+          ],
+          "sql_after": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend,\n      AVG(op.payment_value) AS avg_payment_value\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      rs.Recency,\n      rs.Frequency,\n      rs.Monetary,\n      rs.Recency || '-' || rs.Frequency || '-' || rs.Monetary AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;"
+        },
+        {
+          "attempts_used": 2,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend,\n      AVG(op.payment_value) AS avg_payment_value\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      rs.Recency,\n      rs.Frequency,\n      rs.Monetary,\n      rs.Recency || '-' || rs.Frequency || '-' || rs.Monetary AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;",
+          "validation_issues": [
+            {
+              "description": "Missing join with order_items table",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Incorrect aggregation function used, plan specifies AVG(order_payments.payment_value) but SQL query uses AVG(op.payment_value) which is correct but the plan also implies the need for other aggregations like SUM and COUNT which are not used in the final query",
+              "severity": "WARNING"
+            },
+            {
+              "description": "Extra columns selected in subqueries, not all columns are used in the final query",
+              "severity": "WARNING"
+            },
+            {
+              "description": "Group by clause does not exactly match the plan, plan specifies customers.customer_unique_id and RFM_segment but SQL query uses c.customer_unique_id and cr.RFM_segment",
+              "severity": "CRITICAL"
+            }
+          ],
+          "sql_after": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      rs.Recency,\n      rs.Frequency,\n      rs.Monetary,\n      rs.Recency || '-' || rs.Frequency || '-' || rs.Monetary AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_items oi ON o.order_id = oi.order_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;"
+        },
+        {
+          "attempts_used": 3,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      rs.Recency,\n      rs.Frequency,\n      rs.Monetary,\n      rs.Recency || '-' || rs.Frequency || '-' || rs.Monetary AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_items oi ON o.order_id = oi.order_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;",
+          "validation_issues": [
+            {
+              "description": "Missing join condition between orders and order_items tables in the plan",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Extra join with order_items table in the SQL query",
+              "severity": "WARNING"
+            },
+            {
+              "description": "Incorrect aggregation function used in the SQL query, plan specifies AVG(order_payments.payment_value) but query uses AVG(op.payment_value)",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Group by clause in the SQL query does not exactly match the plan, plan specifies customers.customer_unique_id and RFM_segment but query uses c.customer_unique_id and cr.RFM_segment",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Filter condition in the SQL query is correct but could be optimized",
+              "severity": "WARNING"
+            }
+          ],
+          "sql_after": "WITH \n  -- Calculate latest purchase date per customer\n  latest_purchases AS (\n    SELECT customer_id, MAX(order_purchase_timestamp) AS latest_purchase\n    FROM orders\n    WHERE order_status = 'delivered'\n    GROUP BY customer_id\n  ),\n  \n  -- Calculate total spend and total orders per customer\n  customer_metrics AS (\n    SELECT \n      o.customer_id, \n      COUNT(o.order_id) AS total_orders, \n      SUM(op.payment_value) AS total_spend\n    FROM orders o\n    JOIN order_payments op ON o.order_id = op.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY o.customer_id\n  ),\n  \n  -- Define RFM segments based on Recency, Frequency, and Monetary criteria\n  rfm_segments AS (\n    SELECT \n      cm.customer_id,\n      CASE \n        WHEN lp.latest_purchase > DATE('now', '-30 days') THEN 'Recent'\n        WHEN lp.latest_purchase > DATE('now', '-90 days') THEN 'Medium'\n        ELSE 'Old'\n      END AS Recency,\n      CASE \n        WHEN cm.total_orders > 5 THEN 'High'\n        WHEN cm.total_orders > 1 THEN 'Medium'\n        ELSE 'Low'\n      END AS Frequency,\n      CASE \n        WHEN cm.total_spend > 1000 THEN 'High'\n        WHEN cm.total_spend > 100 THEN 'Medium'\n        ELSE 'Low'\n      END AS Monetary\n    FROM customer_metrics cm\n    JOIN latest_purchases lp ON cm.customer_id = lp.customer_id\n  ),\n  \n  -- Assign customers to RFM segments\n  customer_rfm AS (\n    SELECT \n      rs.customer_id,\n      rs.Recency,\n      rs.Frequency,\n      rs.Monetary,\n      rs.Recency || '-' || rs.Frequency || '-' || rs.Monetary AS RFM_segment\n    FROM rfm_segments rs\n  )\n\nSELECT \n  c.customer_unique_id, \n  cr.RFM_segment,\n  AVG(op.payment_value) AS avg_payment_value\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id\nJOIN order_items oi ON o.order_id = oi.order_id\nJOIN order_payments op ON o.order_id = op.order_id\nJOIN customer_rfm cr ON c.customer_id = cr.customer_id\nWHERE o.order_status = 'delivered'\nGROUP BY c.customer_unique_id, cr.RFM_segment;"
+        }
+      ],
+      "system_plan_validation_attempts_used": 6,
+      "baseline_runtime_sec": 16.96,
+      "system_runtime_sec": 208.906,
+      "query_runtime_sec": 225.889,
+      "attempts_used": 3,
+      "winner": "tie",
+      "baseline_error": null,
+      "system_error": null,
+      "is_complex": true,
+      "complexity_score": 15,
+      "complexity_reasons": [
+        "joins:6",
+        "nested-select",
+        "group-by",
+        "aggregation",
+        "ambiguous-nl"
+      ],
+      "notes": "Both produced similar outcome.",
+      "budget_exhausted_stages": [],
+      "budget_log": [
+        "planner:1",
+        "sql_generation:1",
+        "plan_validation:1",
+        "plan_validation_regen:1",
+        "plan_validation_regen:1",
+        "sql_generation:1",
+        "plan_validation:1",
+        "plan_validation_regen:1",
+        "plan_validation_regen:1",
+        "sql_generation:1"
+      ],
+      "plan_validator_confidence": 0.9,
+      "invalidation_severity_breakdown": {
+        "WARNING": 6,
+        "CRITICAL": 8
+      },
+      "deterministic_fixes_applied": [],
+      "llm_corrections_saved": 0,
+      "parallel_winner": "n/a",
+      "schema_pre_validation_result": {
+        "valid": true,
+        "errors": [],
+        "warnings": []
+      },
+      "pipeline_mode": "full"
+    },
+    {
+      "db_id": "sqlite-sakila",
+      "example_id": "local197",
+      "question": "Among our top 10 paying customers, can you identify the largest change in payment amounts from one month to the immediately following month? Specifically, please determine for which customer and during which month this maximum month-over-month difference occurred, and provide the difference rounded to two decimal places.",
+      "gold_sql": "WITH result_table AS (\n  SELECT \n    strftime('%m', pm.payment_date) AS pay_mon, \n    customer_id,\n    COUNT(pm.amount) AS pay_countpermon, \n    SUM(pm.amount) AS pay_amount \n  FROM \n    payment AS pm \n  GROUP BY \n    pay_mon, \n    customer_id\n), \ntop10_customer AS (\n  SELECT \n    customer_id,\n    SUM(tb.pay_amount) AS total_payments \n  FROM \n    result_table AS tb \n  GROUP BY \n    customer_id\n  ORDER BY \n    SUM(tb.pay_amount) DESC \n  LIMIT \n    10\n), \ndifference_per_mon AS (\n  SELECT \n    pay_mon AS month_number, \n    pay_mon AS month, \n    tb.pay_countpermon, \n    tb.pay_amount, \n    ABS(tb.pay_amount - LAG(tb.pay_amount) OVER (PARTITION BY tb.customer_id)) AS diff \n  FROM \n    result_table tb \n    JOIN top10_customer top ON top.customer_id = tb.customer_id\n) \nSELECT \n  month, \n  ROUND(max_diff, 2) AS max_diff \nFROM (\n  SELECT \n    month, \n    diff, \n    month_number, \n    MAX(diff) OVER (PARTITION BY month) AS max_diff \n  FROM \n    difference_per_mon\n) AS max_per_mon \nWHERE \n  diff = max_diff \nORDER BY \n  max_diff DESC \nLIMIT \n  1;",
+      "baseline_sql": "WITH monthly_payments AS (\n  SELECT \n    customer_id, \n    STRFTIME('%Y-%m', payment_date) AS payment_month, \n    SUM(amount) AS total_amount\n  FROM \n    payment\n  GROUP BY \n    customer_id, \n    STRFTIME('%Y-%m', payment_date)\n),\nranked_customers AS (\n  SELECT \n    customer_id, \n    SUM(amount) AS total_spent\n  FROM \n    payment\n  GROUP BY \n    customer_id\n  ORDER BY \n    total_spent DESC\n  LIMIT 10\n),\nmonthly_diff AS (\n  SELECT \n    mp.customer_id, \n    mp.payment_month, \n    mp.total_amount, \n    LAG(mp.total_amount) OVER (PARTITION BY mp.customer_id ORDER BY mp.payment_month) AS prev_amount\n  FROM \n    monthly_payments mp\n  JOIN \n    ranked_customers rc ON mp.customer_id = rc.customer_id\n),\ndiff_amount AS (\n  SELECT \n    customer_id, \n    payment_month, \n    ROUND(total_amount - prev_amount, 2) AS amount_diff\n  FROM \n    monthly_diff\n  WHERE \n    prev_amount IS NOT NULL\n)\nSELECT \n  customer_id, \n  payment_month, \n  amount_diff\nFROM \n  diff_amount\nORDER BY \n  amount_diff DESC\nLIMIT 1;",
+      "system_sql": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  ),\n  -- Subquery 2: Calculate month-over-month difference in payment amounts\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  ),\n  -- Subquery 3: Calculate month-over-month difference in payment amounts and round to two decimal places\n  rounded_diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      ROUND(diff, 2) AS rounded_diff \n    FROM \n      diff\n  ),\n  -- Subquery 4: Identify customer and month with largest difference\n  largest_diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      rounded_diff \n    FROM \n      rounded_diff \n    WHERE \n      rounded_diff IS NOT NULL \n    ORDER BY \n      rounded_diff DESC \n    LIMIT 1\n  )\n\nSELECT \n  customer_id, \n  SUM(amount) AS total \nFROM \n  payment p \nJOIN \n  customer c ON p.customer_id = c.customer_id \nWHERE \n  p.payment_date LIKE '%/%/%' \nGROUP BY \n  c.customer_id, \n  EXTRACT(MONTH FROM p.payment_date) \nORDER BY \n  SUM(p.amount) DESC \nLIMIT 10;",
+      "baseline_correct": true,
+      "system_correct": false,
+      "baseline_execution_success": true,
+      "system_execution_success": false,
+      "baseline_classification": "success",
+      "system_classification": "incorrect_sql",
+      "baseline_failure_type": "success",
+      "system_failure_type": "incorrect_sql",
+      "baseline_api_failures": 0,
+      "system_api_failures": 0,
+      "baseline_retries_used": 0,
+      "system_retries_used": 0,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "NOT_RUN",
+      "system_semantic_validation_reason": "execution_failed",
+      "system_semantic_trace": [],
+      "system_plan": {
+        "intent": "filter+aggregate+ranking",
+        "tables": [
+          "payment",
+          "customer"
+        ],
+        "joins": [
+          {
+            "left": "payment",
+            "right": "customer",
+            "on": "payment.customer_id=customer.customer_id"
+          }
+        ],
+        "filters": [
+          "payment_date LIKE '%/%/%'"
+        ],
+        "aggregations": [
+          "SUM(payment.amount)"
+        ],
+        "group_by": [
+          "customer.customer_id",
+          "EXTRACT(MONTH FROM payment.payment_date)"
+        ],
+        "order_by": [
+          "SUM(payment.amount) DESC"
+        ],
+        "limit": "10",
+        "subqueries": [
+          "SELECT customer_id, EXTRACT(MONTH FROM payment_date) AS month, SUM(amount) AS total FROM payment GROUP BY customer_id, EXTRACT(MONTH FROM payment_date)",
+          "SELECT customer_id, month, total, LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS prev_total FROM (SELECT customer_id, EXTRACT(MONTH FROM payment_date) AS month, SUM(amount) AS total FROM payment GROUP BY customer_id, EXTRACT(MONTH FROM payment_date))",
+          "SELECT customer_id, month, total, total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff FROM (SELECT customer_id, EXTRACT(MONTH FROM payment_date) AS month, SUM(amount) AS total FROM payment GROUP BY customer_id, EXTRACT(MONTH FROM payment_date))",
+          "SELECT customer_id, month, ROUND(diff, 2) AS diff FROM (SELECT customer_id, month, total, total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff FROM (SELECT customer_id, EXTRACT(MONTH FROM payment_date) AS month, SUM(amount) AS total FROM payment GROUP BY customer_id, EXTRACT(MONTH FROM payment_date))) WHERE diff IS NOT NULL ORDER BY diff DESC LIMIT 1"
+        ],
+        "reasoning_steps": [
+          "Extract month from payment date",
+          "Group payments by customer and month",
+          "Calculate total payment for each customer and month",
+          "Rank top 10 paying customers",
+          "Calculate month-over-month difference in payment amounts",
+          "Identify customer and month with largest difference",
+          "Round difference to two decimal places"
+        ]
+      },
+      "system_plan_raw": "{\n\"intent\": \"filter+aggregate+ranking\",\n\"tables\": [\"payment\", \"customer\"],\n\"joins\": [\n{\"left\": \"payment\", \"right\": \"customer\", \"on\": \"payment.customer_id=customer.customer_id\"}\n],\n\"filters\": [\"payment_date LIKE '%/%/%'\"],\n\"aggregations\": [\"SUM(payment.amount)\"],\n\"group_by\": [\"customer.customer_id\", \"EXTRACT(MONTH FROM payment.payment_date)\"],\n\"order_by\": [\"SUM(payment.amount) DESC\"],\n\"limit\": \"10\",\n\"subqueries\": [\n\"SELECT customer_id, EXTRACT(MONTH FROM payment_date) AS month, SUM(amount) AS total FROM payment GROUP BY customer_id, EXTRACT(MONTH FROM payment_date)\",\n\"SELECT customer_id, month, total, LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS prev_total FROM (SELECT customer_id, EXTRACT(MONTH FROM payment_date) AS month, SUM(amount) AS total FROM payment GROUP BY customer_id, EXTRACT(MONTH FROM payment_date))\",\n\"SELECT customer_id, month, total, total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff FROM (SELECT customer_id, EXTRACT(MONTH FROM payment_date) AS month, SUM(amount) AS total FROM payment GROUP BY customer_id, EXTRACT(MONTH FROM payment_date))\",\n\"SELECT customer_id, month, ROUND(diff, 2) AS diff FROM (SELECT customer_id, month, total, total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff FROM (SELECT customer_id, EXTRACT(MONTH FROM payment_date) AS month, SUM(amount) AS total FROM payment GROUP BY customer_id, EXTRACT(MONTH FROM payment_date))) WHERE diff IS NOT NULL ORDER BY diff DESC LIMIT 1\"\n],\n\"reasoning_steps\": [\n\"Extract month from payment date\",\n\"Group payments by customer and month\",\n\"Calculate total payment for each customer and month\",\n\"Rank top 10 paying customers\",\n\"Calculate month-over-month difference in payment amounts\",\n\"Identify customer and month with largest difference\",\n\"Round difference to two decimal places\"\n]\n}",
+      "system_plan_parse_error": "",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 1.0,
+      "system_plan_quality_reasons": [],
+      "system_planner_api_failures": 0,
+      "system_planner_retries_used": 0,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 6,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [
+        {
+          "attempts_used": 1,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "SELECT customer.customer_id, EXTRACT(MONTH FROM payment.payment_date), SUM(payment.amount) \nFROM payment \nJOIN customer ON payment.customer_id = customer.customer_id \nWHERE payment.payment_date LIKE '%/%/%' \nGROUP BY customer.customer_id, EXTRACT(MONTH FROM payment.payment_date) \nORDER BY SUM(payment.amount) DESC \nLIMIT 10;",
+          "validation_issues": [
+            {
+              "description": "The SQL query does not implement the full plan, specifically the ranking and month-over-month difference calculations are missing",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not include the subqueries specified in the plan",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not calculate the month-over-month difference in payment amounts",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query does not round the difference to two decimal places",
+              "severity": "WARNING"
+            }
+          ],
+          "sql_after": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      customer_id, \n      EXTRACT(MONTH FROM payment_date) AS month, \n      SUM(amount) AS total \n    FROM \n      payment \n    GROUP BY \n      customer_id, \n      EXTRACT(MONTH FROM payment_date)\n  ),\n  \n  -- Subquery 2: Calculate month-over-month difference\n  monthly_diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS prev_total \n    FROM \n      monthly_payments\n  ),\n  \n  -- Subquery 3: Calculate difference\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  ),\n  \n  -- Subquery 4: Round difference to two decimal places and get top 1\n  top_diff AS (\n    SELECT \n      customer_id, \n      month, \n      ROUND(diff, 2) AS diff \n    FROM \n      diff \n    WHERE \n      diff IS NOT NULL \n    ORDER BY \n      diff DESC \n    LIMIT 1\n  ),\n  \n  -- Main query: Join payment and customer, filter by payment date, group by customer and month, and rank top 10\n  ranked_payments AS (\n    SELECT \n      c.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      c.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) \n    ORDER BY \n      SUM(p.amount) DESC \n    LIMIT 10\n  )\n\nSELECT \n  * \nFROM \n  ranked_payments;"
+        },
+        {
+          "attempts_used": 2,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      customer_id, \n      EXTRACT(MONTH FROM payment_date) AS month, \n      SUM(amount) AS total \n    FROM \n      payment \n    GROUP BY \n      customer_id, \n      EXTRACT(MONTH FROM payment_date)\n  ),\n  \n  -- Subquery 2: Calculate month-over-month difference\n  monthly_diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS prev_total \n    FROM \n      monthly_payments\n  ),\n  \n  -- Subquery 3: Calculate difference\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  ),\n  \n  -- Subquery 4: Round difference to two decimal places and get top 1\n  top_diff AS (\n    SELECT \n      customer_id, \n      month, \n      ROUND(diff, 2) AS diff \n    FROM \n      diff \n    WHERE \n      diff IS NOT NULL \n    ORDER BY \n      diff DESC \n    LIMIT 1\n  ),\n  \n  -- Main query: Join payment and customer, filter by payment date, group by customer and month, and rank top 10\n  ranked_payments AS (\n    SELECT \n      c.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      c.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) \n    ORDER BY \n      SUM(p.amount) DESC \n    LIMIT 10\n  )\n\nSELECT \n  * \nFROM \n  ranked_payments;",
+          "validation_issues": [
+            {
+              "description": "The SQL query does not fully implement the plan. The plan includes reasoning steps to calculate month-over-month difference in payment amounts and identify the customer and month with the largest difference, but the SQL query only implements part of this logic.",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query has extra columns selected in the final SELECT statement. The plan only requires the customer_id, month, and total columns, but the SQL query selects all columns.",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query has unnecessary subqueries. The subqueries monthly_diff and diff are not used in the final result.",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query does not round the difference to two decimal places as required by the plan.",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query does not limit the result to the top 1 customer and month with the largest difference as required by the plan.",
+              "severity": "WARNING"
+            }
+          ],
+          "sql_after": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  ),\n  \n  -- Subquery 2: Calculate month-over-month difference\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  )\n\nSELECT \n  customer_id, \n  month, \n  ROUND(diff, 2) AS diff \nFROM \n  diff \nWHERE \n  diff IS NOT NULL \nORDER BY \n  diff DESC \nLIMIT 1;"
+        },
+        {
+          "attempts_used": 3,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  ),\n  \n  -- Subquery 2: Calculate month-over-month difference\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  )\n\nSELECT \n  customer_id, \n  month, \n  ROUND(diff, 2) AS diff \nFROM \n  diff \nWHERE \n  diff IS NOT NULL \nORDER BY \n  diff DESC \nLIMIT 1;",
+          "validation_issues": [
+            {
+              "description": "Missing aggregation: The plan requires SUM(payment.amount) aggregation, but the SQL query only calculates the difference between consecutive months.",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Incorrect GROUP BY: The plan requires grouping by customer_id and month, but the SQL query only groups by customer_id and month in the subquery, not in the final result.",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Missing ranking: The plan requires ranking the top 10 paying customers, but the SQL query only returns the customer with the largest difference in payment amounts.",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Suboptimal join: The plan requires joining payment and customer tables, but the SQL query joins them in the subquery, which may not be the most efficient approach.",
+              "severity": "WARNING"
+            },
+            {
+              "description": "Extra columns selected: The plan only requires customer_id, month, and total, but the SQL query selects additional columns, including diff.",
+              "severity": "WARNING"
+            }
+          ],
+          "sql_after": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  ),\n  \n  -- Subquery 2: Calculate month-over-month difference\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  )\n\nSELECT \n  customer_id, \n  month, \n  ROUND(diff, 2) AS diff \nFROM \n  diff \nWHERE \n  diff IS NOT NULL \nORDER BY \n  diff DESC \nLIMIT 1;"
+        },
+        {
+          "attempts_used": 1,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      c.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      c.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  )\n\nSELECT \n  customer_id, \n  month, \n  SUM(total) AS total \nFROM \n  monthly_payments\nGROUP BY \n  customer_id, \n  month\nORDER BY \n  SUM(total) DESC \nLIMIT 10;",
+          "validation_issues": [
+            {
+              "description": "Extra column 'c.customer_id' in subquery 'monthly_payments'",
+              "severity": "WARNING"
+            },
+            {
+              "description": "Missing 'EXTRACT(MONTH FROM payment_date)' in 'ORDER BY' clause of subquery 'monthly_payments'",
+              "severity": "WARNING"
+            },
+            {
+              "description": "Incorrect 'GROUP BY' clause in main query, should only include 'customer_id' and 'EXTRACT(MONTH FROM payment_date)'",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Missing 'LAG' function to calculate month-over-month difference in payment amounts",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Missing 'ROUND' function to round difference to two decimal places",
+              "severity": "CRITICAL"
+            }
+          ],
+          "sql_after": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  ),\n  -- Subquery 2: Calculate month-over-month difference in payment amounts\n  monthly_diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS prev_total \n    FROM \n      monthly_payments\n  ),\n  -- Subquery 3: Calculate difference in payment amounts\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  ),\n  -- Subquery 4: Round difference to two decimal places and get top 1\n  rounded_diff AS (\n    SELECT \n      customer_id, \n      month, \n      ROUND(diff, 2) AS diff \n    FROM \n      diff \n    WHERE \n      diff IS NOT NULL \n    ORDER BY \n      diff DESC \n    LIMIT 1\n  )\n\nSELECT \n  customer_id, \n  month, \n  SUM(total) AS total \nFROM \n  monthly_payments\nGROUP BY \n  customer_id, \n  month\nORDER BY \n  SUM(total) DESC, \n  month\nLIMIT 10;"
+        },
+        {
+          "attempts_used": 2,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  ),\n  -- Subquery 2: Calculate month-over-month difference in payment amounts\n  monthly_diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS prev_total \n    FROM \n      monthly_payments\n  ),\n  -- Subquery 3: Calculate difference in payment amounts\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  ),\n  -- Subquery 4: Round difference to two decimal places and get top 1\n  rounded_diff AS (\n    SELECT \n      customer_id, \n      month, \n      ROUND(diff, 2) AS diff \n    FROM \n      diff \n    WHERE \n      diff IS NOT NULL \n    ORDER BY \n      diff DESC \n    LIMIT 1\n  )\n\nSELECT \n  customer_id, \n  month, \n  SUM(total) AS total \nFROM \n  monthly_payments\nGROUP BY \n  customer_id, \n  month\nORDER BY \n  SUM(total) DESC, \n  month\nLIMIT 10;",
+          "validation_issues": [
+            {
+              "description": "The SQL query does not fully implement the plan. The plan requires ranking top 10 paying customers, but the SQL query only selects the top 10 customers by total payment amount and month, without considering the month-over-month difference in payment amounts.",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "The SQL query has an extra column 'month' in the final SELECT statement, which is not present in the plan.",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query uses 'SUM(total) AS total' in the final SELECT statement, which is not necessary since 'total' is already calculated in the 'monthly_payments' subquery.",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query does not use the 'rounded_diff' subquery, which is not necessary for the final result.",
+              "severity": "WARNING"
+            },
+            {
+              "description": "The SQL query does not use the 'prev_total' column from the 'monthly_diff' subquery, which is not necessary for the final result.",
+              "severity": "WARNING"
+            }
+          ],
+          "sql_after": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  ),\n  -- Subquery 2: Calculate month-over-month difference in payment amounts\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  )\n\nSELECT \n  customer_id, \n  total \nFROM \n  monthly_payments\nORDER BY \n  total DESC\nLIMIT 10;"
+        },
+        {
+          "attempts_used": 3,
+          "decision": "INVALID",
+          "confidence": 0.9,
+          "sql_before": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  ),\n  -- Subquery 2: Calculate month-over-month difference in payment amounts\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  )\n\nSELECT \n  customer_id, \n  total \nFROM \n  monthly_payments\nORDER BY \n  total DESC\nLIMIT 10;",
+          "validation_issues": [
+            {
+              "description": "Missing subquery to calculate month-over-month difference in payment amounts and identify customer and month with largest difference",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Missing ROUND function to round difference to two decimal places",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Missing filter to exclude NULL differences",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Incorrect ORDER BY clause, should be SUM(payment.amount) DESC",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Missing LAG function to calculate previous month's total",
+              "severity": "CRITICAL"
+            },
+            {
+              "description": "Suboptimal join, could use more efficient join method",
+              "severity": "WARNING"
+            }
+          ],
+          "sql_after": "WITH \n  -- Subquery 1: Group payments by customer and month\n  monthly_payments AS (\n    SELECT \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date) AS month, \n      SUM(p.amount) AS total \n    FROM \n      payment p \n    JOIN \n      customer c ON p.customer_id = c.customer_id \n    WHERE \n      p.payment_date LIKE '%/%/%' \n    GROUP BY \n      p.customer_id, \n      EXTRACT(MONTH FROM p.payment_date)\n  ),\n  -- Subquery 2: Calculate month-over-month difference in payment amounts\n  diff AS (\n    SELECT \n      customer_id, \n      month, \n      total, \n      total - LAG(total) OVER (PARTITION BY customer_id ORDER BY month) AS diff \n    FROM \n      monthly_payments\n  )\n\nSELECT \n  customer_id, \n  total \nFROM \n  monthly_payments\nORDER BY \n  total DESC\nLIMIT 10;"
+        }
+      ],
+      "system_plan_validation_attempts_used": 6,
+      "baseline_runtime_sec": 14.511,
+      "system_runtime_sec": 210.543,
+      "query_runtime_sec": 225.079,
+      "attempts_used": 3,
+      "winner": "baseline",
+      "baseline_error": null,
+      "system_error": "near \"FROM\": syntax error",
+      "is_complex": true,
+      "complexity_score": 11,
+      "complexity_reasons": [
+        "joins:1",
+        "nested-select",
+        "group-by",
+        "order-by",
+        "limit",
+        "aggregation",
+        "ambiguous-nl"
+      ],
+      "notes": "Baseline recovered system failure: near \"FROM\": syntax error",
+      "budget_exhausted_stages": [],
+      "budget_log": [
+        "planner:1",
+        "sql_generation:1",
+        "plan_validation:1",
+        "plan_validation_regen:1",
+        "plan_validation_regen:1",
+        "sql_generation:1",
+        "plan_validation:1",
+        "plan_validation_regen:1",
+        "plan_validation_regen:1",
+        "sql_generation:1"
+      ],
+      "plan_validator_confidence": 0.9,
+      "invalidation_severity_breakdown": {
+        "WARNING": 7,
+        "CRITICAL": 9
+      },
+      "deterministic_fixes_applied": [],
+      "llm_corrections_saved": 0,
+      "parallel_winner": "n/a",
+      "schema_pre_validation_result": {
+        "valid": true,
+        "errors": [],
+        "warnings": []
+      },
+      "pipeline_mode": "full"
+    },
+    {
+      "db_id": "IPL",
+      "example_id": "local023",
+      "question": "Please help me find the names of top 5 players with the highest average runs per match in season 5, along with their batting averages.",
+      "gold_sql": "WITH runs_scored AS (\n    SELECT \n        bb.striker AS player_id,\n        bb.match_id,\n        bs.runs_scored AS runs\n    FROM \n        ball_by_ball AS bb\n    JOIN \n        batsman_scored AS bs ON bb.match_id = bs.match_id \n            AND bb.over_id = bs.over_id \n            AND bb.ball_id = bs.ball_id \n            AND bb.innings_no = bs.innings_no\n    WHERE \n        bb.match_id IN (SELECT match_id FROM match WHERE season_id = 5)\n),\ntotal_runs AS (\n    SELECT \n        player_id, \n        match_id, \n        SUM(runs) AS total_runs \n    FROM \n        runs_scored \n    GROUP BY \n        player_id, match_id\n),\nbatting_averages AS (\n    SELECT \n        player_id, \n        SUM(total_runs) AS runs, \n        COUNT(match_id) AS num_matches,\n        ROUND(SUM(total_runs) / CAST(COUNT(match_id) AS FLOAT), 3) AS batting_avg\n    FROM \n        total_runs \n    GROUP BY \n        player_id \n    ORDER BY \n        batting_avg DESC \n    LIMIT 5\n)\nSELECT \n    p.player_name,\n    b.batting_avg\nFROM \n    player AS p\nJOIN \n    batting_averages AS b ON p.player_id = b.player_id\nORDER BY \n    b.batting_avg DESC;",
+      "baseline_sql": "SELECT \n  p.player_name, \n  AVG(b.runs_scored) AS average_runs_per_match\nFROM \n  player p\n  JOIN player_match pm ON p.player_id = pm.player_id\n  JOIN match m ON pm.match_id = m.match_id\n  JOIN batsman_scored b ON m.match_id = b.match_id AND pm.player_id = b.striker\nWHERE \n  m.season_id = 5\nGROUP BY \n  p.player_name\nORDER BY \n  average_runs_per_match DESC\nLIMIT 5;",
+      "system_sql": "SELECT p.player_name, AVG(bs.runs_scored) AS avg_runs_scored\nFROM batsman_scored bs\nJOIN match m ON bs.match_id = m.match_id\nJOIN player_match pm ON bs.match_id = pm.match_id \nJOIN player p ON pm.player_id = p.player_id\nWHERE m.season_id = 5 AND (bs.batsman_id = pm.player_id)\nGROUP BY p.player_name\nORDER BY AVG(bs.runs_scored) DESC\nLIMIT 5;",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": false,
+      "system_execution_success": false,
+      "baseline_classification": "incorrect_sql",
+      "system_classification": "incorrect_sql",
+      "baseline_failure_type": "incorrect_sql",
+      "system_failure_type": "incorrect_sql",
+      "baseline_api_failures": 0,
+      "system_api_failures": 0,
+      "baseline_retries_used": 0,
+      "system_retries_used": 3,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "NOT_RUN",
+      "system_semantic_validation_reason": "execution_failed",
+      "system_semantic_trace": [],
+      "system_plan": {
+        "intent": "filter+aggregate+ranking",
+        "tables": [
+          "batsman_scored",
+          "match",
+          "player",
+          "player_match"
+        ],
+        "joins": [
+          {
+            "left": "batsman_scored",
+            "right": "match",
+            "on": "batsman_scored.match_id=match.match_id"
+          },
+          {
+            "left": "batsman_scored",
+            "right": "player_match",
+            "on": "batsman_scored.match_id=player_match.match_id AND (batsman_scored.striker=player_match.player_id OR batsman_scored.non_striker=player_match.player_id)"
+          },
+          {
+            "left": "player_match",
+            "right": "player",
+            "on": "player_match.player_id=player.player_id"
+          }
+        ],
+        "filters": [
+          "match.season_id = 5"
+        ],
+        "aggregations": [
+          "AVG(batsman_scored.runs_scored)"
+        ],
+        "group_by": [
+          "player.player_name"
+        ],
+        "order_by": [
+          "AVG(batsman_scored.runs_scored) DESC"
+        ],
+        "limit": "5",
+        "subqueries": [],
+        "reasoning_steps": [
+          "Filter matches to only those in season 5",
+          "Join batsman_scored to match to filter by season",
+          "Join batsman_scored to player_match to get player information",
+          "Join player_match to player to get player names",
+          "Group by player name and calculate average runs per match",
+          "Order results by average runs per match in descending order",
+          "Limit results to top 5 players"
+        ]
+      },
+      "system_plan_raw": "{\n\"intent\": \"filter+aggregate+ranking\",\n\"tables\": [\"batsman_scored\", \"match\", \"player\", \"player_match\"],\n\"joins\": [\n{\"left\": \"batsman_scored\", \"right\": \"match\", \"on\": \"batsman_scored.match_id=match.match_id\"},\n{\"left\": \"batsman_scored\", \"right\": \"player_match\", \"on\": \"batsman_scored.match_id=player_match.match_id AND (batsman_scored.striker=player_match.player_id OR batsman_scored.non_striker=player_match.player_id)\"},\n{\"left\": \"player_match\", \"right\": \"player\", \"on\": \"player_match.player_id=player.player_id\"}\n],\n\"filters\": [\"match.season_id = 5\"],\n\"aggregations\": [\"AVG(batsman_scored.runs_scored)\"],\n\"group_by\": [\"player.player_name\"],\n\"order_by\": [\"AVG(batsman_scored.runs_scored) DESC\"],\n\"limit\": \"5\",\n\"subqueries\": [],\n\"reasoning_steps\": [\n\"Filter matches to only those in season 5\",\n\"Join batsman_scored to match to filter by season\",\n\"Join batsman_scored to player_match to get player information\",\n\"Join player_match to player to get player names\",\n\"Group by player name and calculate average runs per match\",\n\"Order results by average runs per match in descending order\",\n\"Limit results to top 5 players\"\n]\n}",
+      "system_plan_parse_error": "",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 1.0,
+      "system_plan_quality_reasons": [],
+      "system_planner_api_failures": 0,
+      "system_planner_retries_used": 0,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 0,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [
+        {
+          "attempts_used": 1,
+          "decision": "VALID",
+          "confidence": 0.5,
+          "sql_before": "SELECT player.player_name, AVG(batsman_scored.runs_scored) AS avg_runs_scored\nFROM batsman_scored\nJOIN match ON batsman_scored.match_id = match.match_id\nJOIN player_match ON batsman_scored.match_id = player_match.match_id AND (batsman_scored.striker = player_match.player_id OR batsman_scored.non_striker = player_match.player_id)\nJOIN player ON player_match.player_id = player.player_id\nWHERE match.season_id = 5\nGROUP BY player.player_name\nORDER BY AVG(batsman_scored.runs_scored) DESC\nLIMIT 5;",
+          "validation_issues": [],
+          "sql_after": "SELECT player.player_name, AVG(batsman_scored.runs_scored) AS avg_runs_scored\nFROM batsman_scored\nJOIN match ON batsman_scored.match_id = match.match_id\nJOIN player_match ON batsman_scored.match_id = player_match.match_id AND (batsman_scored.striker = player_match.player_id OR batsman_scored.non_striker = player_match.player_id)\nJOIN player ON player_match.player_id = player.player_id\nWHERE match.season_id = 5\nGROUP BY player.player_name\nORDER BY AVG(batsman_scored.runs_scored) DESC\nLIMIT 5;",
+          "note": "valid"
+        },
+        {
+          "attempts_used": 1,
+          "decision": "VALID",
+          "confidence": 0.5,
+          "sql_before": "SELECT p.player_name, AVG(bs.runs_scored) AS avg_runs_scored\nFROM batsman_scored bs\nJOIN match m ON bs.match_id = m.match_id\nJOIN player_match pm ON bs.match_id = pm.match_id \nJOIN player p ON pm.player_id = p.player_id\nWHERE m.season_id = 5 AND (bs.batsman_id = pm.player_id)\nGROUP BY p.player_name\nORDER BY AVG(bs.runs_scored) DESC\nLIMIT 5;",
+          "validation_issues": [],
+          "sql_after": "SELECT p.player_name, AVG(bs.runs_scored) AS avg_runs_scored\nFROM batsman_scored bs\nJOIN match m ON bs.match_id = m.match_id\nJOIN player_match pm ON bs.match_id = pm.match_id \nJOIN player p ON pm.player_id = p.player_id\nWHERE m.season_id = 5 AND (bs.batsman_id = pm.player_id)\nGROUP BY p.player_name\nORDER BY AVG(bs.runs_scored) DESC\nLIMIT 5;",
+          "note": "valid"
+        }
+      ],
+      "system_plan_validation_attempts_used": 2,
+      "baseline_runtime_sec": 14.252,
+      "system_runtime_sec": 134.298,
+      "query_runtime_sec": 148.552,
+      "attempts_used": 3,
+      "winner": "tie",
+      "baseline_error": "no such column: b.striker",
+      "system_error": "no such column: bs.batsman_id",
+      "is_complex": true,
+      "complexity_score": 13,
+      "complexity_reasons": [
+        "joins:1",
+        "nested-select",
+        "group-by",
+        "order-by",
+        "limit",
+        "subquery-filter",
+        "aggregation",
+        "ambiguous-nl"
+      ],
+      "notes": "Both failed (baseline: no such column: b.striker; system: no such column: bs.batsman_id)",
+      "budget_exhausted_stages": [],
+      "budget_log": [
+        "planner:1",
+        "sql_generation:1",
+        "plan_validation:1",
+        "execution_correction:1",
+        "sql_generation:1",
+        "sql_generation:1",
+        "plan_validation:1"
+      ],
+      "plan_validator_confidence": 0.5,
+      "invalidation_severity_breakdown": {},
+      "deterministic_fixes_applied": [
+        "deterministic:column_fuzzy_match:batsman_scored.striker:still_failed"
+      ],
+      "llm_corrections_saved": 0,
+      "parallel_winner": "n/a",
+      "schema_pre_validation_result": {
+        "valid": true,
+        "errors": [],
+        "warnings": []
+      },
+      "pipeline_mode": "full"
+    },
+    {
+      "db_id": "E_commerce",
+      "example_id": "local004",
+      "question": "Could you tell me the number of orders, average payment per order and customer lifespan in weeks of the 3 custumers with the highest average payment per order, where the lifespan is calculated by subtracting the earliest purchase date from the latest purchase date in days, dividing by seven, and if the result is less than seven days, setting it to 1.0?",
+      "gold_sql": "WITH CustomerData AS (\n    SELECT\n        customer_unique_id,\n        COUNT(DISTINCT orders.order_id) AS order_count,\n        SUM(payment_value) AS total_payment,\n        JULIANDAY(MIN(order_purchase_timestamp)) AS first_order_day,\n        JULIANDAY(MAX(order_purchase_timestamp)) AS last_order_day\n    FROM customers\n        JOIN orders USING (customer_id)\n        JOIN order_payments USING (order_id)\n    GROUP BY customer_unique_id\n)\nSELECT\n    customer_unique_id,\n    order_count AS PF,\n    ROUND(total_payment / order_count, 2) AS AOV,\n    CASE\n        WHEN (last_order_day - first_order_day) < 7 THEN\n            1\n        ELSE\n            (last_order_day - first_order_day) / 7\n        END AS ACL\nFROM CustomerData\nORDER BY AOV DESC\nLIMIT 3",
+      "baseline_sql": "",
+      "system_sql": "",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": false,
+      "system_execution_success": false,
+      "baseline_classification": "api_error",
+      "system_classification": "api_error",
+      "baseline_failure_type": "api_error",
+      "system_failure_type": "api_error",
+      "baseline_api_failures": 1,
+      "system_api_failures": 1,
+      "baseline_retries_used": 1,
+      "system_retries_used": 3,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "NOT_RUN",
+      "system_semantic_validation_reason": "api_error",
+      "system_semantic_trace": [],
+      "system_plan": {
+        "intent": "Could you tell me the number of orders, average payment per order and customer lifespan in weeks of the 3 custumers with the highest average payment per order, where the lifespan is calculated by subtracting the earliest purchase date from the latest purchase date in days, dividing by seven, and if the result is less than seven days, setting it to 1.0?",
+        "tables": [],
+        "joins": [],
+        "filters": [],
+        "aggregations": [],
+        "group_by": [],
+        "order_by": [],
+        "limit": "",
+        "subqueries": [],
+        "reasoning_steps": [
+          "Planner failed due to API error. Fallback intent-only plan was used."
+        ]
+      },
+      "system_plan_raw": "",
+      "system_plan_parse_error": "planner_api_error: api_error: Groq request failed. Check network, API key, and model name.",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 0.9,
+      "system_plan_quality_reasons": [
+        "tables"
+      ],
+      "system_planner_api_failures": 1,
+      "system_planner_retries_used": 1,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 0,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [],
+      "system_plan_validation_attempts_used": 0,
+      "baseline_runtime_sec": 29.772,
+      "system_runtime_sec": 120.315,
+      "query_runtime_sec": 150.088,
+      "attempts_used": 3,
+      "winner": "tie",
+      "baseline_error": "api_error: Groq request failed. Check network, API key, and model name.",
+      "system_error": "api_error: Groq request failed. Check network, API key, and model name.",
+      "is_complex": true,
+      "complexity_score": 8,
+      "complexity_reasons": [
+        "joins:2",
+        "group-by",
+        "aggregation",
+        "ambiguous-nl"
+      ],
+      "notes": "Both failed (baseline: api_error: Groq request failed. Check network, API key, and model name.; system: api_error: Groq request failed. Check network, API key, and model name.)",
+      "budget_exhausted_stages": [],
+      "budget_log": [
+        "planner:1",
+        "sql_generation:1",
+        "sql_generation:1",
+        "sql_generation:1"
+      ],
+      "plan_validator_confidence": null,
+      "invalidation_severity_breakdown": {},
+      "deterministic_fixes_applied": [],
+      "llm_corrections_saved": 0,
+      "parallel_winner": "n/a",
+      "schema_pre_validation_result": null,
+      "pipeline_mode": "full"
+    },
+    {
+      "db_id": "sqlite-sakila",
+      "example_id": "local199",
+      "question": "Can you identify the year and month with the highest rental orders created by the store's staff for each store? Please list the store ID, the year, the month, and the total rentals for those dates.",
+      "gold_sql": "WITH result_table AS (\n  SELECT \n    strftime('%Y', RE.RENTAL_DATE) AS YEAR, \n    strftime('%m', RE.RENTAL_DATE) AS RENTAL_MONTH, \n    ST.STORE_ID, \n    COUNT(RE.RENTAL_ID) AS count \n  FROM \n    RENTAL RE \n    JOIN STAFF ST ON RE.STAFF_ID = ST.STAFF_ID \n  GROUP BY \n    YEAR, \n    RENTAL_MONTH, \n    ST.STORE_ID \n), \nmonthly_sales AS (\n  SELECT \n    YEAR, \n    RENTAL_MONTH, \n    STORE_ID, \n    SUM(count) AS total_rentals \n  FROM \n    result_table \n  GROUP BY \n    YEAR, \n    RENTAL_MONTH, \n    STORE_ID\n),\nstore_max_sales AS (\n  SELECT \n    STORE_ID, \n    YEAR, \n    RENTAL_MONTH, \n    total_rentals, \n    MAX(total_rentals) OVER (PARTITION BY STORE_ID) AS max_rentals \n  FROM \n    monthly_sales\n)\nSELECT \n  STORE_ID, \n  YEAR, \n  RENTAL_MONTH, \n  total_rentals \nFROM \n  store_max_sales \nWHERE \n  total_rentals = max_rentals\nORDER BY \n  STORE_ID;",
+      "baseline_sql": "",
+      "system_sql": "",
+      "baseline_correct": false,
+      "system_correct": false,
+      "baseline_execution_success": false,
+      "system_execution_success": false,
+      "baseline_classification": "api_error",
+      "system_classification": "api_error",
+      "baseline_failure_type": "api_error",
+      "system_failure_type": "api_error",
+      "baseline_api_failures": 1,
+      "system_api_failures": 1,
+      "baseline_retries_used": 1,
+      "system_retries_used": 3,
+      "baseline_retry_success": false,
+      "system_retry_success": false,
+      "system_semantic_corrections_used": 0,
+      "system_semantic_success": false,
+      "system_semantic_validation_decision": "NOT_RUN",
+      "system_semantic_validation_reason": "api_error",
+      "system_semantic_trace": [],
+      "system_plan": {
+        "intent": "Can you identify the year and month with the highest rental orders created by the store's staff for each store? Please list the store ID, the year, the month, and the total rentals for those dates.",
+        "tables": [],
+        "joins": [],
+        "filters": [],
+        "aggregations": [],
+        "group_by": [],
+        "order_by": [],
+        "limit": "",
+        "subqueries": [],
+        "reasoning_steps": [
+          "Planner failed due to API error. Fallback intent-only plan was used."
+        ]
+      },
+      "system_plan_raw": "",
+      "system_plan_parse_error": "planner_api_error: api_error: Groq request failed. Check network, API key, and model name.",
+      "system_plan_quality": "high",
+      "system_plan_quality_score": 0.9,
+      "system_plan_quality_reasons": [
+        "tables"
+      ],
+      "system_planner_api_failures": 1,
+      "system_planner_retries_used": 1,
+      "system_planner_retry_success": false,
+      "system_plan_validation_failures": 0,
+      "system_plan_correction_success": false,
+      "system_plan_validation_trace": [],
+      "system_plan_validation_attempts_used": 0,
+      "baseline_runtime_sec": 29.38,
+      "system_runtime_sec": 120.745,
+      "query_runtime_sec": 150.127,
+      "attempts_used": 3,
+      "winner": "tie",
+      "baseline_error": "api_error: Groq request failed. Check network, API key, and model name.",
+      "system_error": "api_error: Groq request failed. Check network, API key, and model name.",
+      "is_complex": true,
+      "complexity_score": 9,
+      "complexity_reasons": [
+        "joins:1",
+        "nested-select",
+        "group-by",
+        "aggregation",
+        "ambiguous-nl"
+      ],
+      "notes": "Both failed (baseline: api_error: Groq request failed. Check network, API key, and model name.; system: api_error: Groq request failed. Check network, API key, and model name.)",
+      "budget_exhausted_stages": [],
+      "budget_log": [
+        "planner:1",
+        "sql_generation:1",
+        "sql_generation:1",
+        "sql_generation:1"
+      ],
+      "plan_validator_confidence": null,
+      "invalidation_severity_breakdown": {},
+      "deterministic_fixes_applied": [],
+      "llm_corrections_saved": 0,
+      "parallel_winner": "n/a",
+      "schema_pre_validation_result": null,
+      "pipeline_mode": "full"
+    }
+  ],
+  "metrics": {
+    "total_queries": 6,
+    "complex_queries": 6,
+    "total_runtime_sec": 1021.412,
+    "avg_query_runtime_sec": 170.235,
+    "baseline_accuracy": 0.5,
+    "system_accuracy": 0.25,
+    "final_accuracy": 0.25,
+    "improvement": -0.25,
+    "improvement_percent": -25.0,
+    "baseline_execution_success_rate": 0.5,
+    "system_execution_success_rate": 0.3333,
+    "baseline_incorrect_sql": 1,
+    "system_incorrect_sql": 2,
+    "baseline_wrong_results": 1,
+    "system_wrong_results": 1,
+    "baseline_complex_query_accuracy": 0.3333,
+    "system_complex_query_accuracy": 0.1667,
+    "complex_query_accuracy": {
+      "baseline": 0.3333,
+      "system": 0.1667
+    },
+    "baseline_api_failures": 2,
+    "system_api_failures": 2,
+    "api_failures": 4,
+    "retry_success_rate": 0.0,
+    "semantic_corrections_used": 2,
+    "semantic_success_rate": 0.0,
+    "plan_quality": {
+      "avg_score": 0.9667,
+      "high_rate": 1.0,
+      "count": 6
+    },
+    "plan_quality_avg": 0.9667,
+    "plan_validation_failures": 12,
+    "plan_correction_success_rate": 0.0,
+    "logical_error_reduction": 0.0
+  },
+  "adjusted_metrics": {
+    "adjusted_accuracy": 33.33,
+    "system_exclusive_wins": 0,
+    "baseline_exclusive_wins": 1,
+    "both_correct": 1,
+    "both_wrong": 4,
+    "system_win_rate": 0.0,
+    "baseline_fallback_rate": 16.67,
+    "tie_rate": 83.33,
+    "deterministic_fixes_total": 1,
+    "llm_corrections_saved_total": 0,
+    "budget_exhaustion_rate": 0.0
+  }
+}

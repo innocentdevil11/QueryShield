@@ -1,0 +1,12 @@
+Table: students
+Columns: id, name, email, age, department
+
+Table: courses
+Columns: id, code, title, credits
+
+Table: scores
+Columns: id, student_id, course_id, marks, exam_date
+
+Foreign Key: scores.student_id -> students.id
+Foreign Key: scores.course_id -> courses.id
+

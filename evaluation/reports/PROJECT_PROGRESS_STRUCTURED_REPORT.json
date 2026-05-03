@@ -1,0 +1,2303 @@
+{
+  "generated_on": "2026-05-03",
+  "scope": "Expanded repository-level progress report for QueryShield Text-to-SQL project.",
+  "conversation_objectives": [
+    "fair baseline/system evaluation with same prompt",
+    "high-throughput local model testing on Ollama",
+    "Spider2 subset benchmarking",
+    "plan-based SQL generation",
+    "strict plan enforcement with validation/regeneration loop",
+    "detailed metrics and reporting"
+  ],
+  "pipeline_evolution": [
+    "baseline comparator",
+    "fair prompt comparator",
+    "execution correction + retry resilience",
+    "semantic validation loop",
+    "spider2 balanced benchmarking",
+    "plan-based generation",
+    "strict plan enforcement"
+  ],
+  "latest_key_files": {
+    "planner": "queryshield/evaluation/planner.py",
+    "sql_generator": "queryshield/evaluation/sql_generator.py",
+    "plan_validator": "queryshield/evaluation/plan_validator.py",
+    "spider_runner": "queryshield/evaluation/spider_runner.py",
+    "spider_metrics": "queryshield/evaluation/spider_metrics.py"
+  },
+  "highlights": {
+    "total_run_artifacts_with_metrics": 31,
+    "in_progress_runs": 3,
+    "best_system_accuracy_run": "queryshield/evaluation/results_mistral_all.json",
+    "best_improvement_run": "queryshield/evaluation/results_mistral_all.json",
+    "worst_improvement_run": "queryshield/evaluation/results_groq_all_fair.json"
+  },
+  "runs": [
+    {
+      "path": "queryshield/evaluation/groq_hard_results.json",
+      "name": "groq_hard_results.json",
+      "family": "custom_query_benchmarks",
+      "status": "",
+      "experiment": "",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 20,
+        "baseline_correct": 7,
+        "system_correct": 12,
+        "baseline_accuracy": 0.35,
+        "system_accuracy": 0.6,
+        "improvement": 0.25,
+        "improvement_percent": 25.0,
+        "baseline_incorrect_sql": 6,
+        "system_incorrect_sql": 3,
+        "baseline_wrong_results": 2,
+        "system_wrong_results": 2,
+        "baseline_partial_correct": 5,
+        "system_partial_correct": 3,
+        "safety_blocks": 0,
+        "baseline_api_failures": 0,
+        "system_api_failures": 0,
+        "api_failures": 0,
+        "retry_success_count": 21,
+        "retry_success_rate": 1.0
+      },
+      "derived": {
+        "improvement_percent": 25.0,
+        "api_failures_total": 0
+      },
+      "subset": {},
+      "runtime_config": {},
+      "last_modified": "2026-04-03T02:39:00.884089"
+    },
+    {
+      "path": "queryshield/evaluation/groq_hard_results_saved_copy.json",
+      "name": "groq_hard_results_saved_copy.json",
+      "family": "custom_query_benchmarks",
+      "status": "",
+      "experiment": "same_prompt_fair",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 20,
+        "baseline_correct": 8,
+        "system_correct": 12,
+        "baseline_accuracy": 0.4,
+        "system_accuracy": 0.6,
+        "improvement": 0.2,
+        "improvement_percent": 20.0,
+        "baseline_incorrect_sql": 7,
+        "system_incorrect_sql": 3,
+        "baseline_wrong_results": 2,
+        "system_wrong_results": 2,
+        "baseline_partial_correct": 3,
+        "system_partial_correct": 3,
+        "safety_blocks": 0,
+        "baseline_api_failures": 0,
+        "system_api_failures": 0,
+        "api_failures": 0,
+        "retry_success_count": 0,
+        "retry_success_rate": 0.0
+      },
+      "derived": {
+        "improvement_percent": 20.0,
+        "api_failures_total": 0
+      },
+      "subset": {},
+      "runtime_config": {},
+      "last_modified": "2026-04-03T02:56:35.148731"
+    },
+    {
+      "path": "queryshield/evaluation/results_groq_all.json",
+      "name": "results_groq_all.json",
+      "family": "custom_query_benchmarks",
+      "status": "",
+      "experiment": "",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 26,
+        "baseline_success": 4,
+        "system_success": 11,
+        "baseline_correct": 2,
+        "system_correct": 13,
+        "system_improvement": 11,
+        "baseline_accuracy": 0.0769,
+        "system_accuracy": 0.5,
+        "improvement": 0.4231,
+        "safety_blocks": 2,
+        "retry_success_count": 2,
+        "retry_success_rate": 0.6667,
+        "baseline_incorrect_sql": 17,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_partial_correct": 2,
+        "system_partial_correct": 0
+      },
+      "derived": {
+        "improvement_percent": 42.31,
+        "api_failures_total": 0
+      },
+      "subset": {},
+      "runtime_config": {},
+      "last_modified": "2026-04-01T05:30:44.650627"
+    },
+    {
+      "path": "queryshield/evaluation/results_groq_all_fair.json",
+      "name": "results_groq_all_fair.json",
+      "family": "custom_query_benchmarks",
+      "status": "",
+      "experiment": "",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 26,
+        "baseline_success": 20,
+        "system_success": 12,
+        "baseline_correct": 17,
+        "system_correct": 14,
+        "system_improvement": -3,
+        "baseline_accuracy": 0.6538,
+        "system_accuracy": 0.5385,
+        "improvement": -0.1154,
+        "safety_blocks": 2,
+        "retry_success_count": 2,
+        "retry_success_rate": 1.0,
+        "baseline_incorrect_sql": 2,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_partial_correct": 3,
+        "system_partial_correct": 0
+      },
+      "derived": {
+        "improvement_percent": -11.54,
+        "api_failures_total": 0
+      },
+      "subset": {},
+      "runtime_config": {},
+      "last_modified": "2026-04-01T05:58:30.823519"
+    },
+    {
+      "path": "queryshield/evaluation/results_mistral_all.json",
+      "name": "results_mistral_all.json",
+      "family": "custom_query_benchmarks",
+      "status": "",
+      "experiment": "",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 26,
+        "baseline_success": 5,
+        "system_success": 17,
+        "baseline_correct": 2,
+        "system_correct": 17,
+        "system_improvement": 15,
+        "baseline_accuracy": 0.0769,
+        "system_accuracy": 0.6538,
+        "improvement": 0.5769,
+        "safety_blocks": 3,
+        "retry_success_count": 3,
+        "retry_success_rate": 0.2727,
+        "baseline_incorrect_sql": 20,
+        "system_incorrect_sql": 6,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 2,
+        "baseline_partial_correct": 3,
+        "system_partial_correct": 1
+      },
+      "derived": {
+        "improvement_percent": 57.69,
+        "api_failures_total": 0
+      },
+      "subset": {},
+      "runtime_config": {},
+      "last_modified": "2026-04-01T05:40:18.324951"
+    },
+    {
+      "path": "queryshield/evaluation/results_mistral_all_fair.json",
+      "name": "results_mistral_all_fair.json",
+      "family": "custom_query_benchmarks",
+      "status": "",
+      "experiment": "",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 26,
+        "baseline_success": 15,
+        "system_success": 17,
+        "baseline_correct": 10,
+        "system_correct": 17,
+        "system_improvement": 7,
+        "baseline_accuracy": 0.3846,
+        "system_accuracy": 0.6538,
+        "improvement": 0.2692,
+        "safety_blocks": 3,
+        "retry_success_count": 3,
+        "retry_success_rate": 0.2727,
+        "baseline_incorrect_sql": 11,
+        "system_incorrect_sql": 6,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 2,
+        "baseline_partial_correct": 5,
+        "system_partial_correct": 1
+      },
+      "derived": {
+        "improvement_percent": 26.92,
+        "api_failures_total": 0
+      },
+      "subset": {},
+      "runtime_config": {},
+      "last_modified": "2026-04-01T06:11:10.944381"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_best_same_prompt_efficiency.json",
+      "name": "spider2_best_same_prompt_efficiency.json",
+      "family": "spider2_same_prompt",
+      "status": "in_progress",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": 10,
+      "total_queries_planned": 24,
+      "metrics": {
+        "total_queries": 10,
+        "complex_queries": 10,
+        "total_runtime_sec": 3799.026,
+        "avg_query_runtime_sec": 379.903,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 10,
+        "system_api_failures": 10,
+        "api_failures": 20,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 20
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 90,
+        "max_correction_retries": 2,
+        "max_semantic_retries": 2,
+        "use_semantic_loop": true,
+        "api_max_retries": 4,
+        "api_recovery_rounds": 3,
+        "api_recovery_cooldown_seconds": 2,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-04T03:00:56.171683"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_best_same_prompt_efficiency_v2.json",
+      "name": "spider2_best_same_prompt_efficiency_v2.json",
+      "family": "spider2_same_prompt",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "total_runtime_sec": 3333.327,
+        "avg_query_runtime_sec": 138.889,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 24,
+        "system_api_failures": 24,
+        "api_failures": 48,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 48
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 60,
+        "max_correction_retries": 2,
+        "max_semantic_retries": 1,
+        "use_semantic_loop": true,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 2,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-04T03:56:50.163127"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_cloud_balanced_24q.json",
+      "name": "spider2_cloud_balanced_24q.json",
+      "family": "spider2_balanced",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "total_runtime_sec": 756.399,
+        "avg_query_runtime_sec": 31.517,
+        "baseline_accuracy": 0.5,
+        "system_accuracy": 0.5,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.7917,
+        "system_execution_success_rate": 0.9583,
+        "baseline_incorrect_sql": 5,
+        "system_incorrect_sql": 1,
+        "baseline_wrong_results": 7,
+        "system_wrong_results": 11,
+        "baseline_complex_query_accuracy": 0.5263,
+        "system_complex_query_accuracy": 0.5263,
+        "complex_query_accuracy": {
+          "baseline": 0.5263,
+          "system": 0.5263
+        },
+        "baseline_api_failures": 0,
+        "system_api_failures": 0,
+        "api_failures": 0,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": -0.5714
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 0
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 180,
+        "max_correction_retries": 1,
+        "max_semantic_retries": 0,
+        "use_semantic_loop": true,
+        "api_max_retries": 1,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 20,
+        "throttle_seconds": 0.0
+      },
+      "last_modified": "2026-04-12T14:28:37.919277"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_cloud_planbased_24q.json",
+      "name": "spider2_cloud_planbased_24q.json",
+      "family": "spider2_plan_based",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "total_runtime_sec": 1017.531,
+        "avg_query_runtime_sec": 42.397,
+        "baseline_accuracy": 0.5,
+        "system_accuracy": 0.4167,
+        "improvement": -0.0833,
+        "improvement_percent": -8.33,
+        "baseline_execution_success_rate": 0.8333,
+        "system_execution_success_rate": 0.9583,
+        "baseline_incorrect_sql": 4,
+        "system_incorrect_sql": 1,
+        "baseline_wrong_results": 8,
+        "system_wrong_results": 13,
+        "baseline_complex_query_accuracy": 0.5263,
+        "system_complex_query_accuracy": 0.4211,
+        "complex_query_accuracy": {
+          "baseline": 0.5263,
+          "system": 0.4211
+        },
+        "baseline_api_failures": 0,
+        "system_api_failures": 0,
+        "api_failures": 0,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "plan_quality": {
+          "avg_score": 1.0,
+          "high_rate": 1.0,
+          "count": 24
+        },
+        "plan_quality_avg": 1.0,
+        "logical_error_reduction": -0.625
+      },
+      "derived": {
+        "improvement_percent": -8.33,
+        "api_failures_total": 0
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 180,
+        "max_correction_retries": 1,
+        "max_semantic_retries": 0,
+        "use_semantic_loop": true,
+        "system_plan_based": true,
+        "api_max_retries": 1,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 20,
+        "throttle_seconds": 0.0
+      },
+      "last_modified": "2026-04-12T15:56:09.507581"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_cloud_planbased_smoke_1q.json",
+      "name": "spider2_cloud_planbased_smoke_1q.json",
+      "family": "spider2_plan_based",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 64.803,
+        "avg_query_runtime_sec": 64.803,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 1.0,
+        "baseline_incorrect_sql": 1,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 1,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 0,
+        "system_api_failures": 0,
+        "api_failures": 0,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "plan_quality": {
+          "avg_score": 1.0,
+          "high_rate": 1.0,
+          "count": 1
+        },
+        "plan_quality_avg": 1.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 0
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 180,
+        "max_correction_retries": 1,
+        "max_semantic_retries": 0,
+        "use_semantic_loop": true,
+        "system_plan_based": true,
+        "api_max_retries": 1,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 0.0
+      },
+      "last_modified": "2026-04-12T15:28:35.392552"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_cloud_planenforced_smoke_1q.json",
+      "name": "spider2_cloud_planenforced_smoke_1q.json",
+      "family": "spider2_plan_enforced",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 152.679,
+        "avg_query_runtime_sec": 152.679,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "final_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 1,
+        "system_api_failures": 1,
+        "api_failures": 2,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "plan_quality": {
+          "avg_score": 0.9,
+          "high_rate": 1.0,
+          "count": 1
+        },
+        "plan_quality_avg": 0.9,
+        "plan_validation_failures": 0,
+        "plan_correction_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 2
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 180,
+        "max_correction_retries": 1,
+        "max_semantic_retries": 0,
+        "max_plan_validation_attempts": 3,
+        "use_semantic_loop": true,
+        "system_plan_based": true,
+        "api_max_retries": 1,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 20,
+        "throttle_seconds": 0.0
+      },
+      "last_modified": "2026-04-12T16:29:05.911010"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_cloud_smoke_1q.json",
+      "name": "spider2_cloud_smoke_1q.json",
+      "family": "spider2_smoke",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 26.683,
+        "avg_query_runtime_sec": 26.683,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 1,
+        "system_incorrect_sql": 1,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 0,
+        "system_api_failures": 0,
+        "api_failures": 0,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 0
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 180,
+        "max_correction_retries": 1,
+        "max_semantic_retries": 2,
+        "use_semantic_loop": false,
+        "api_max_retries": 0,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 0,
+        "throttle_seconds": 0.0
+      },
+      "last_modified": "2026-04-12T14:12:56.134745"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_comparator_same_prompt_efficiency_v2.json",
+      "name": "spider2_comparator_same_prompt_efficiency_v2.json",
+      "family": "spider2_same_prompt",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "total_runtime_sec": 8290.149,
+        "avg_query_runtime_sec": 345.423,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 24,
+        "system_api_failures": 24,
+        "api_failures": 48,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 48
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 60,
+        "max_correction_retries": 2,
+        "max_semantic_retries": 0,
+        "use_semantic_loop": false,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 2,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-04T06:15:23.813776"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_gemma4e4b_same_prompt_maxacc.json",
+      "name": "spider2_gemma4e4b_same_prompt_maxacc.json",
+      "family": "spider2_same_prompt",
+      "status": "in_progress",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": 4,
+      "total_queries_planned": 24,
+      "metrics": {
+        "total_queries": 4,
+        "complex_queries": 4,
+        "total_runtime_sec": 2354.444,
+        "avg_query_runtime_sec": 588.611,
+        "baseline_accuracy": 0.75,
+        "system_accuracy": 0.6667,
+        "improvement": -0.0833,
+        "improvement_percent": -8.33,
+        "baseline_execution_success_rate": 1.0,
+        "system_execution_success_rate": 0.75,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 1,
+        "system_wrong_results": 1,
+        "baseline_complex_query_accuracy": 0.75,
+        "system_complex_query_accuracy": 0.5,
+        "complex_query_accuracy": {
+          "baseline": 0.75,
+          "system": 0.5
+        },
+        "baseline_api_failures": 0,
+        "system_api_failures": 1,
+        "api_failures": 1,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": -8.33,
+        "api_failures_total": 1
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 180,
+        "max_correction_retries": 2,
+        "max_semantic_retries": 2,
+        "use_semantic_loop": true,
+        "api_max_retries": 0,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 0,
+        "throttle_seconds": 0.0
+      },
+      "last_modified": "2026-04-12T13:51:24.695007"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_ollama_planenforced_24q.json",
+      "name": "spider2_ollama_planenforced_24q.json",
+      "family": "spider2_plan_enforced",
+      "status": "in_progress",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": 2,
+      "total_queries_planned": 24,
+      "metrics": {
+        "total_queries": 2,
+        "complex_queries": 2,
+        "total_runtime_sec": 4937.072,
+        "avg_query_runtime_sec": 2468.536,
+        "baseline_accuracy": 0.5,
+        "system_accuracy": 0.5,
+        "final_accuracy": 0.5,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 1.0,
+        "system_execution_success_rate": 1.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 1,
+        "system_wrong_results": 1,
+        "baseline_complex_query_accuracy": 0.5,
+        "system_complex_query_accuracy": 0.5,
+        "complex_query_accuracy": {
+          "baseline": 0.5,
+          "system": 0.5
+        },
+        "baseline_api_failures": 0,
+        "system_api_failures": 0,
+        "api_failures": 0,
+        "retry_success_rate": 1.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "plan_quality": {
+          "avg_score": 1.0,
+          "high_rate": 1.0,
+          "count": 2
+        },
+        "plan_quality_avg": 1.0,
+        "plan_validation_failures": 0,
+        "plan_correction_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 0
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 240,
+        "max_correction_retries": 1,
+        "max_semantic_retries": 0,
+        "max_plan_validation_attempts": 3,
+        "use_semantic_loop": true,
+        "system_plan_based": true,
+        "api_max_retries": 1,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 20,
+        "throttle_seconds": 0.0
+      },
+      "last_modified": "2026-04-12T18:06:02.185735"
+    },
+    {
+      "path": "queryshield/evaluation/spider2_ollama_planenforced_smoke_1q.json",
+      "name": "spider2_ollama_planenforced_smoke_1q.json",
+      "family": "spider2_plan_enforced",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 809.642,
+        "avg_query_runtime_sec": 809.642,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "final_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 1.0,
+        "system_execution_success_rate": 1.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 1,
+        "system_wrong_results": 1,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 0,
+        "system_api_failures": 0,
+        "api_failures": 0,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "plan_quality": {
+          "avg_score": 1.0,
+          "high_rate": 1.0,
+          "count": 1
+        },
+        "plan_quality_avg": 1.0,
+        "plan_validation_failures": 0,
+        "plan_correction_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 0
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 240,
+        "max_correction_retries": 1,
+        "max_semantic_retries": 0,
+        "max_plan_validation_attempts": 3,
+        "use_semantic_loop": true,
+        "system_plan_based": true,
+        "api_max_retries": 1,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 20,
+        "throttle_seconds": 0.0
+      },
+      "last_modified": "2026-04-12T16:43:15.163128"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_one_query_profile.json",
+      "name": "spider2_one_query_profile.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 37.636,
+        "avg_query_runtime_sec": 37.636,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 1,
+        "system_api_failures": 1,
+        "api_failures": 2,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 2
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 35,
+        "api_max_retries": 1,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T08:10:15.552748"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_one_query_profile_after_fix.json",
+      "name": "spider2_one_query_profile_after_fix.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 18.606,
+        "avg_query_runtime_sec": 18.606,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 1,
+        "system_api_failures": 1,
+        "api_failures": 2,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 2
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 35,
+        "api_max_retries": 1,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T08:13:32.835020"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_one_query_profile_retry0.json",
+      "name": "spider2_one_query_profile_retry0.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 4.54,
+        "avg_query_runtime_sec": 4.54,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 1,
+        "system_api_failures": 1,
+        "api_failures": 2,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 2
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 35,
+        "api_max_retries": 0,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T08:14:19.828452"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_one_query_smoke_70b.json",
+      "name": "spider2_one_query_smoke_70b.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 74.956,
+        "avg_query_runtime_sec": 74.956,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 1,
+        "system_api_failures": 1,
+        "api_failures": 2,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 2
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 60,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T08:22:33.455984"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_one_query_smoke_8b.json",
+      "name": "spider2_one_query_smoke_8b.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 74.942,
+        "avg_query_runtime_sec": 74.942,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 1,
+        "system_api_failures": 1,
+        "api_failures": 2,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 2
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 45,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 2,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T08:24:42.539459"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_one_query_smoke_8b_proxyfix.json",
+      "name": "spider2_one_query_smoke_8b_proxyfix.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 15.494,
+        "avg_query_runtime_sec": 15.494,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 1.0,
+        "system_execution_success_rate": 1.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 1,
+        "system_wrong_results": 1,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 0,
+        "system_api_failures": 0,
+        "api_failures": 0,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 2,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 0
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 45,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T08:42:19.989815"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_one_query_smoke_8b_r2r1.json",
+      "name": "spider2_one_query_smoke_8b_r2r1.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 1,
+        "complex_queries": 1,
+        "total_runtime_sec": 32.754,
+        "avg_query_runtime_sec": 32.754,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 1,
+        "system_api_failures": 1,
+        "api_failures": 2,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 2
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL"
+        ],
+        "selected_count": 1,
+        "requested_num_dbs": 1,
+        "requested_num_queries": 1
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 45,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T08:25:50.559314"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_subset_results_16db_30min_proxyfix.json",
+      "name": "spider2_subset_results_16db_30min_proxyfix.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "total_runtime_sec": 778.28,
+        "avg_query_runtime_sec": 32.428,
+        "baseline_accuracy": 0.2273,
+        "system_accuracy": 0.5455,
+        "improvement": 0.3182,
+        "improvement_percent": 31.82,
+        "baseline_execution_success_rate": 0.4583,
+        "system_execution_success_rate": 0.4583,
+        "baseline_incorrect_sql": 11,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 6,
+        "system_wrong_results": 5,
+        "baseline_complex_query_accuracy": 0.2105,
+        "system_complex_query_accuracy": 0.2632,
+        "complex_query_accuracy": {
+          "baseline": 0.2105,
+          "system": 0.2632
+        },
+        "baseline_api_failures": 2,
+        "system_api_failures": 13,
+        "api_failures": 15,
+        "retry_success_rate": 0.7,
+        "semantic_corrections_used": 9,
+        "semantic_success_rate": 0.4286,
+        "logical_error_reduction": 0.1667
+      },
+      "derived": {
+        "improvement_percent": 31.82,
+        "api_failures_total": 15
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 45,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T08:55:45.746654"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_subset_results_16db_30min_proxyfix_r3.json",
+      "name": "spider2_subset_results_16db_30min_proxyfix_r3.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "total_runtime_sec": 1425.77,
+        "avg_query_runtime_sec": 59.407,
+        "baseline_accuracy": 0.1579,
+        "system_accuracy": 0.4375,
+        "improvement": 0.2796,
+        "improvement_percent": 27.96,
+        "baseline_execution_success_rate": 0.375,
+        "system_execution_success_rate": 0.5417,
+        "baseline_incorrect_sql": 10,
+        "system_incorrect_sql": 3,
+        "baseline_wrong_results": 6,
+        "system_wrong_results": 6,
+        "baseline_complex_query_accuracy": 0.1579,
+        "system_complex_query_accuracy": 0.3684,
+        "complex_query_accuracy": {
+          "baseline": 0.1579,
+          "system": 0.3684
+        },
+        "baseline_api_failures": 5,
+        "system_api_failures": 8,
+        "api_failures": 13,
+        "retry_success_rate": 0.75,
+        "semantic_corrections_used": 15,
+        "semantic_success_rate": 0.25,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 27.96,
+        "api_failures_total": 13
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 45,
+        "api_max_retries": 3,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T09:56:19.362028"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_subset_results_16db_30min_proxyfix_rerun.json",
+      "name": "spider2_subset_results_16db_30min_proxyfix_rerun.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "total_runtime_sec": 997.216,
+        "avg_query_runtime_sec": 41.551,
+        "baseline_accuracy": 0.2,
+        "system_accuracy": 0.5,
+        "improvement": 0.3,
+        "improvement_percent": 30.0,
+        "baseline_execution_success_rate": 0.4167,
+        "system_execution_success_rate": 0.7083,
+        "baseline_incorrect_sql": 10,
+        "system_incorrect_sql": 3,
+        "baseline_wrong_results": 6,
+        "system_wrong_results": 7,
+        "baseline_complex_query_accuracy": 0.1579,
+        "system_complex_query_accuracy": 0.4211,
+        "complex_query_accuracy": {
+          "baseline": 0.1579,
+          "system": 0.4211
+        },
+        "baseline_api_failures": 4,
+        "system_api_failures": 4,
+        "api_failures": 8,
+        "retry_success_rate": 0.9048,
+        "semantic_corrections_used": 11,
+        "semantic_success_rate": 0.2857,
+        "logical_error_reduction": -0.1667
+      },
+      "derived": {
+        "improvement_percent": 30.0,
+        "api_failures_total": 8
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 45,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T09:13:25.103806"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_subset_results_16db_30min_proxyfix_strictvalidator.json",
+      "name": "spider2_subset_results_16db_30min_proxyfix_strictvalidator.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "total_runtime_sec": 1031.973,
+        "avg_query_runtime_sec": 42.999,
+        "baseline_accuracy": 0.1667,
+        "system_accuracy": 0.35,
+        "improvement": 0.1833,
+        "improvement_percent": 18.33,
+        "baseline_execution_success_rate": 0.375,
+        "system_execution_success_rate": 0.5833,
+        "baseline_incorrect_sql": 9,
+        "system_incorrect_sql": 6,
+        "baseline_wrong_results": 6,
+        "system_wrong_results": 7,
+        "baseline_complex_query_accuracy": 0.1053,
+        "system_complex_query_accuracy": 0.2632,
+        "complex_query_accuracy": {
+          "baseline": 0.1053,
+          "system": 0.2632
+        },
+        "baseline_api_failures": 6,
+        "system_api_failures": 4,
+        "api_failures": 10,
+        "retry_success_rate": 0.9048,
+        "semantic_corrections_used": 11,
+        "semantic_success_rate": 0.6667,
+        "logical_error_reduction": -0.1667
+      },
+      "derived": {
+        "improvement_percent": 18.33,
+        "api_failures_total": 10
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 45,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T09:31:32.338629"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_subset_results_16db_30min_run.json",
+      "name": "spider2_subset_results_16db_30min_run.json",
+      "family": "spider2_archive_validation",
+      "status": "completed",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "total_runtime_sec": 795.623,
+        "avg_query_runtime_sec": 33.151,
+        "baseline_accuracy": 0.0,
+        "system_accuracy": 0.0,
+        "improvement": 0.0,
+        "improvement_percent": 0.0,
+        "baseline_execution_success_rate": 0.0,
+        "system_execution_success_rate": 0.0,
+        "baseline_incorrect_sql": 0,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 0,
+        "system_wrong_results": 0,
+        "baseline_complex_query_accuracy": 0.0,
+        "system_complex_query_accuracy": 0.0,
+        "complex_query_accuracy": {
+          "baseline": 0.0,
+          "system": 0.0
+        },
+        "baseline_api_failures": 24,
+        "system_api_failures": 24,
+        "api_failures": 48,
+        "retry_success_rate": 0.0,
+        "semantic_corrections_used": 0,
+        "semantic_success_rate": 0.0,
+        "logical_error_reduction": 0.0
+      },
+      "derived": {
+        "improvement_percent": 0.0,
+        "api_failures_total": 48
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {
+        "llm_timeout_seconds": 45,
+        "api_max_retries": 2,
+        "api_recovery_rounds": 1,
+        "api_recovery_cooldown_seconds": 5,
+        "throttle_seconds": 2.5
+      },
+      "last_modified": "2026-04-03T08:41:05.332190"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_archive_20260403_200856/spider2_subset_results_robust.json",
+      "name": "spider2_subset_results_robust.json",
+      "family": "spider2_archive_validation",
+      "status": "",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "baseline_accuracy": 0.2917,
+        "system_accuracy": 0.4348,
+        "improvement": 0.1431,
+        "improvement_percent": 14.31,
+        "baseline_execution_success_rate": 0.5417,
+        "system_execution_success_rate": 0.7083,
+        "baseline_incorrect_sql": 11,
+        "system_incorrect_sql": 6,
+        "baseline_wrong_results": 6,
+        "system_wrong_results": 7,
+        "baseline_complex_query_accuracy": 0.3158,
+        "system_complex_query_accuracy": 0.4211,
+        "complex_query_accuracy": {
+          "baseline": 0.3158,
+          "system": 0.4211
+        },
+        "baseline_api_failures": 0,
+        "system_api_failures": 1,
+        "api_failures": 1,
+        "retry_success_rate": 1.0
+      },
+      "derived": {
+        "improvement_percent": 14.31,
+        "api_failures_total": 1
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {},
+      "last_modified": "2026-04-03T04:00:06.203311"
+    },
+    {
+      "path": "queryshield/evaluation/validation_layer_best_20260403_200856/spider2_subset_results.json",
+      "name": "spider2_subset_results.json",
+      "family": "spider2_archive_best",
+      "status": "",
+      "experiment": "spider2_subset_fair_prompt",
+      "completed_queries": null,
+      "total_queries_planned": null,
+      "metrics": {
+        "total_queries": 24,
+        "complex_queries": 19,
+        "baseline_accuracy": 0.25,
+        "system_accuracy": 0.5714,
+        "improvement": 0.3214,
+        "improvement_percent": 32.14,
+        "baseline_execution_success_rate": 0.2917,
+        "system_execution_success_rate": 0.5833,
+        "baseline_incorrect_sql": 5,
+        "system_incorrect_sql": 0,
+        "baseline_wrong_results": 4,
+        "system_wrong_results": 6,
+        "baseline_complex_query_accuracy": 0.1053,
+        "system_complex_query_accuracy": 0.3158,
+        "complex_query_accuracy": {
+          "baseline": 0.1053,
+          "system": 0.3158
+        },
+        "baseline_api_failures": 12,
+        "system_api_failures": 10,
+        "api_failures": 22,
+        "retry_success_rate": 0.7619
+      },
+      "derived": {
+        "improvement_percent": 32.14,
+        "api_failures_total": 22
+      },
+      "subset": {
+        "selected_db_ids": [
+          "IPL",
+          "E_commerce",
+          "sqlite-sakila",
+          "Pagila",
+          "modern_data",
+          "f1",
+          "California_Traffic_Collision",
+          "WWE",
+          "EU_soccer",
+          "Brazilian_E_Commerce",
+          "delivery_center",
+          "Baseball",
+          "education_business",
+          "bank_sales_trading",
+          "EntertainmentAgency",
+          "Db-IMDB"
+        ],
+        "selected_count": 24,
+        "requested_num_dbs": 16,
+        "requested_num_queries": 24
+      },
+      "runtime_config": {},
+      "last_modified": "2026-04-03T03:35:43.418974"
+    }
+  ],
+  "module_inventory": [
+    {
+      "path": "queryshield/evaluation/__init__.py",
+      "name": "__init__.py",
+      "size_bytes": 63,
+      "last_modified": "2026-04-01T05:02:38.277672",
+      "functions": []
+    },
+    {
+      "path": "queryshield/evaluation/baseline.py",
+      "name": "baseline.py",
+      "size_bytes": 3702,
+      "last_modified": "2026-04-03T02:17:56.330511",
+      "functions": [
+        "build_baseline_prompt",
+        "_get_llm_client",
+        "run_baseline"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/baseline_same_prompt.py",
+      "name": "baseline_same_prompt.py",
+      "size_bytes": 2713,
+      "last_modified": "2026-04-03T02:49:11.982819",
+      "functions": [
+        "build_common_prompt",
+        "_get_llm_client",
+        "run_baseline_generation"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/comparator.py",
+      "name": "comparator.py",
+      "size_bytes": 23635,
+      "last_modified": "2026-04-03T04:19:50.082464",
+      "functions": [
+        "_shared_llm_client",
+        "compare",
+        "_run_system",
+        "_build_system_prompt",
+        "_build_system_correction_prompt",
+        "_evaluate_output",
+        "_build_query_type_hint",
+        "_resolve_mode",
+        "_create_workspace_tmp_paths",
+        "_cleanup_tmp_files",
+        "_is_correct",
+        "_is_partial",
+        "_default_validator",
+        "_has_rows",
+        "_rows_count",
+        "_sql_contains",
+        "_blocked_by_safety",
+        "_affected_rows_at_least",
+        "_pick_winner"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/comparator_same_prompt.py",
+      "name": "comparator_same_prompt.py",
+      "size_bytes": 17625,
+      "last_modified": "2026-04-03T02:50:47.935870",
+      "functions": [
+        "_shared_llm_client",
+        "compare",
+        "_run_baseline_execution",
+        "_run_system",
+        "_build_correction_prompt",
+        "_evaluate_output",
+        "_create_workspace_tmp_paths",
+        "_cleanup_tmp_files",
+        "_is_correct",
+        "_is_partial",
+        "_default_validator",
+        "_has_rows",
+        "_rows_count",
+        "_sql_contains",
+        "_pick_winner"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/metrics.py",
+      "name": "metrics.py",
+      "size_bytes": 6364,
+      "last_modified": "2026-04-03T04:20:21.157828",
+      "functions": [
+        "calculate_metrics",
+        "_read_classification",
+        "_zero_metrics"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/plan_validator.py",
+      "name": "plan_validator.py",
+      "size_bytes": 6151,
+      "last_modified": "2026-04-12T16:15:10.467754",
+      "functions": [
+        "build_plan_validation_prompt",
+        "validate_sql_plan",
+        "_parse_validation_json",
+        "_strip_code_fences",
+        "_extract_json_object",
+        "_to_string_list",
+        "_generate_text_with_retry"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/planner.py",
+      "name": "planner.py",
+      "size_bytes": 8287,
+      "last_modified": "2026-04-12T15:22:40.491116",
+      "functions": [
+        "build_planner_prompt",
+        "parse_plan_response",
+        "assess_plan_quality",
+        "_normalize_plan",
+        "_empty_plan",
+        "_strip_code_fences",
+        "_extract_json_object",
+        "_to_string",
+        "_to_string_list",
+        "_to_join_list",
+        "_is_non_empty_string",
+        "_is_non_empty_list"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/prepare_spider2_local_subset.py",
+      "name": "prepare_spider2_local_subset.py",
+      "size_bytes": 12723,
+      "last_modified": "2026-04-03T03:23:11.574780",
+      "functions": [
+        "prepare_spider2_local_subset",
+        "_load_local_examples",
+        "_build_sqlite_db_from_folder",
+        "_create_tables_from_json_metadata",
+        "_load_sample_rows",
+        "_get_table_columns",
+        "_normalize_value",
+        "_quote_identifier",
+        "_normalize_name",
+        "_parse_ddl_column_types",
+        "_normalize_sqlite_type",
+        "_parse_args",
+        "main"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/retry_utils.py",
+      "name": "retry_utils.py",
+      "size_bytes": 2767,
+      "last_modified": "2026-04-03T06:40:25.486902",
+      "functions": [
+        "get_default_throttler",
+        "generate_with_retry"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/runner.py",
+      "name": "runner.py",
+      "size_bytes": 10481,
+      "last_modified": "2026-04-03T04:20:05.369567",
+      "functions": [
+        "run_evaluation",
+        "_build_row",
+        "_save_results",
+        "_print_table",
+        "_print_final_summary",
+        "_shorten",
+        "_build_notes",
+        "_reset_log_files",
+        "_append_jsonl",
+        "_log_row",
+        "_parse_args",
+        "main"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/runner_same_prompt.py",
+      "name": "runner_same_prompt.py",
+      "size_bytes": 8683,
+      "last_modified": "2026-04-03T02:51:29.930768",
+      "functions": [
+        "run_evaluation",
+        "_build_row",
+        "_save_results",
+        "_print_table",
+        "_print_final_summary",
+        "_shorten",
+        "_build_notes",
+        "_reset_log_files",
+        "_append_jsonl",
+        "_log_row",
+        "_parse_args",
+        "main"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/schema_context.py",
+      "name": "schema_context.py",
+      "size_bytes": 2048,
+      "last_modified": "2026-04-03T02:14:20.798110",
+      "functions": [
+        "build_structured_schema"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/semantic_loop.py",
+      "name": "semantic_loop.py",
+      "size_bytes": 7921,
+      "last_modified": "2026-04-03T04:19:19.790289",
+      "functions": [
+        "run_semantic_loop",
+        "build_semantic_correction_prompt"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/spider_execution.py",
+      "name": "spider_execution.py",
+      "size_bytes": 3217,
+      "last_modified": "2026-04-03T03:08:05.566443",
+      "functions": [
+        "execute_sql",
+        "evaluate_sql_prediction",
+        "_normalized_rows",
+        "_normalize_scalar"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/spider_loader.py",
+      "name": "spider_loader.py",
+      "size_bytes": 4201,
+      "last_modified": "2026-04-03T03:06:16.448626",
+      "functions": [
+        "load_spider_examples",
+        "_extract_rows",
+        "_extract_question",
+        "_extract_gold_sql",
+        "_resolve_db_path"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/spider_metrics.py",
+      "name": "spider_metrics.py",
+      "size_bytes": 8413,
+      "last_modified": "2026-04-12T16:21:49.439368",
+      "functions": [
+        "calculate_spider_metrics",
+        "_zero_metrics"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/spider_prompts.py",
+      "name": "spider_prompts.py",
+      "size_bytes": 1563,
+      "last_modified": "2026-04-12T13:10:44.134378",
+      "functions": [
+        "build_common_prompt",
+        "build_correction_prompt"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/spider_runner.py",
+      "name": "spider_runner.py",
+      "size_bytes": 38135,
+      "last_modified": "2026-04-12T16:21:04.916935",
+      "functions": [
+        "run_spider_evaluation",
+        "_evaluate_one_example",
+        "_run_baseline",
+        "_run_system",
+        "_enforce_plan_constraints",
+        "_pick_winner",
+        "_build_notes",
+        "_generate_with_resilience",
+        "_generate_text_with_resilience",
+        "_generate_text_with_retry",
+        "_clone_llm_client",
+        "_save_json",
+        "_print_report",
+        "_parse_args",
+        "main"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/spider_schema.py",
+      "name": "spider_schema.py",
+      "size_bytes": 2708,
+      "last_modified": "2026-04-03T03:06:55.979601",
+      "functions": [
+        "build_rich_schema_context"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/spider_subset.py",
+      "name": "spider_subset.py",
+      "size_bytes": 4939,
+      "last_modified": "2026-04-03T08:08:12.358494",
+      "functions": [
+        "analyze_complexity",
+        "select_hard_subset"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/sql_generator.py",
+      "name": "sql_generator.py",
+      "size_bytes": 1985,
+      "last_modified": "2026-04-12T16:24:02.615549",
+      "functions": [
+        "build_sql_from_plan_prompt",
+        "build_sql_fix_from_plan_prompt"
+      ]
+    },
+    {
+      "path": "queryshield/evaluation/validator.py",
+      "name": "validator.py",
+      "size_bytes": 5727,
+      "last_modified": "2026-04-03T09:31:59.481686",
+      "functions": [
+        "validate_semantics",
+        "format_result_preview",
+        "_build_validation_prompt",
+        "_parse_validation_response",
+        "_extract_reason",
+        "_trim_row",
+        "_trim_scalar",
+        "_generate_text_with_retry"
+      ]
+    }
+  ]
+}
